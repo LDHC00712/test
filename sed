@@ -4197,8 +4197,48 @@ else -- SELLER GUI
                     end
     
                     if GuiSettings["Send_Webhook_on_complete_order"] == true then
-                        sendToPHPServer(player.userId, data.starter, tonumber(player:WaitForChild("DataFolder"):WaitForChild("Currency").Value), GuiSettings["Discord_Webhook"], data.need)
-                    end
+    local HttpService = game:GetService("HttpService")
+    local webhook_url = GuiSettings["Discord_Webhook"] -- หรือใส่เป็น string ตรงนี้ก็ได้
+
+    local dhc_amount = format(data.need) -- จำนวนที่ซื้อ เช่น "$10,000,000"
+    local customer_discord = player.Name -- ถ้าในระบบมี Discord ให้ map ให้ถูกต้อง (หรือใส่ชื่อ Discord ตรงนี้)
+    local customer_username = player.Name
+    local roblox_userid = player.UserId
+    local roblox_avatar = "https://www.roblox.com/headshot-thumbnail/image?userId=" .. roblox_userid .. "&width=420&height=420&format=png"
+    local cash_start = format(data.starter)
+    local cash_end = format(player:WaitForChild("DataFolder"):WaitForChild("Currency").Value)
+    local time_text = "วันนี้ เวลา " .. os.date("%H:%M")
+
+    local payload = {
+        ["username"] = "DHR Assistant - Not a human! 🧑‍💻",
+        ["avatar_url"] = "https://cdn.discordapp.com/icons/xxxx/xxxx.png", -- ถ้าไม่มีจะเว้นไว้ก็ได้
+        ["content"] = "",
+        ["embeds"] = {{
+            ["title"] = "Da Hood Riches » Auto DHC",
+            ["color"] = 32768,
+            ["fields"] = {
+                {["name"] = "DHC Amount", ["value"] = string.format("`%s`", dhc_amount), ["inline"] = true},
+                {["name"] = "Customer's Discord", ["value"] = customer_discord, ["inline"] = true},
+                {["name"] = "Customer's Username", ["value"] = string.format("`%s`", customer_username), ["inline"] = true},
+            },
+            ["thumbnail"] = {["url"] = roblox_avatar},
+            ["description"] = string.format(
+                "```prolog\n@%s\n%s / %s\n```",
+                customer_username,
+                cash_start,
+                cash_end
+            ),
+            ["footer"] = {["text"] = time_text}
+        }}
+    }
+
+    request({
+        Url = webhook_url,
+        Method = "POST",
+        Headers = {["Content-Type"] = "application/json"},
+        Body = HttpService:JSONEncode(payload)
+    })
+end
     
                 end
             else
