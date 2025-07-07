@@ -4200,33 +4200,27 @@ if GuiSettings["Send_Webhook_on_complete_order"] == true then
     local HttpService = game:GetService("HttpService")
     local webhook_url = GuiSettings["Discord_Webhook"]
 
-    -- ข้อมูล
-    local joined_with = format(data.starter)
-    local goal_amount = format(data.need)
+    local start_cash = format(data.starter)
+    local end_cash = format(player:WaitForChild("DataFolder"):WaitForChild("Currency").Value)
+    local total_bought = format(data.need)
     local customer_username = player.Name
     local roblox_userid = player.UserId
     local roblox_avatar = "https://www.roblox.com/headshot-thumbnail/image?userId=" .. roblox_userid .. "&width=420&height=420&format=png"
-    local time_text = "วันนี้ เวลา " .. os.date("%H:%M")
+    local time_text = os.date("วันที่ %d/%m เวลา %H:%M")
 
     local payload = {
-        ["username"] = "DHR Assistant - Not a human! 🧑‍💻",
+        ["username"] = "LDHC Order Bot",
         ["content"] = "",
         ["embeds"] = {{
-            ["title"] = "Da Hood Riches » Auto DHC",
-            ["color"] = 32768,
+            ["color"] = 5763719,
             ["fields"] = {
-                {["name"] = "Joined with", ["value"] = string.format("`%s`", joined_with), ["inline"] = true},
-                {["name"] = "Goal", ["value"] = string.format("`%s`", goal_amount), ["inline"] = true},
-                {["name"] = "Customer's Username", ["value"] = string.format("`%s`", customer_username), ["inline"] = true},
+                {["name"] = "Start Cash", ["value"] = start_cash, ["inline"] = true},
+                {["name"] = "End Cash", ["value"] = end_cash, ["inline"] = true},
+                {["name"] = "Total Bought", ["value"] = total_bought, ["inline"] = true},
+                {["name"] = "Customer", ["value"] = customer_username, ["inline"] = true},
             },
             ["thumbnail"] = {["url"] = roblox_avatar},
-            ["description"] = string.format(
-                "```prolog\n@%s\nเป้าหมาย: %s\nเงินเข้าเซิฟ: %s\n```",
-                customer_username,
-                goal_amount,
-                joined_with
-            ),
-            ["footer"] = {["text"] = time_text}
+            ["footer"] = {["text"] = time_text},
         }}
     }
 
