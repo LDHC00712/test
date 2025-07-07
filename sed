@@ -4200,37 +4200,34 @@ if GuiSettings["Send_Webhook_on_complete_order"] == true then
     local HttpService = game:GetService("HttpService")
     local webhook_url = GuiSettings["Discord_Webhook"]
 
-    local start_cash = format(data.starter)
-    local end_cash = format(player:WaitForChild("DataFolder"):WaitForChild("Currency").Value)
-    local total_bought = format(data.need)
-    local customer_username = player.Name
-    local roblox_userid = player.UserId
-    local roblox_avatar = "https://www.roblox.com/headshot-thumbnail/image?userId=" .. roblox_userid .. "&width=420&height=420&format=png"
-    local time_text = os.date("วันที่ %d/%m เวลา %H:%M")
+local start_cash = format(data.starter)
+local end_cash = format(player:WaitForChild("DataFolder"):WaitForChild("Currency").Value)
+local total_bought = format(data.need)
+local customer_username = player.Name
+local roblox_avatar = "https://www.roblox.com/headshot-thumbnail/image?userId="..player.UserId.."&width=420&height=420&format=png"
+local time_text = "วันที่ " .. os.date("%d/%m") .. " เวลา " .. os.date("%H:%M")
 
-    local payload = {
-        ["username"] = "LDHC Order Bot",
-        ["content"] = "",
-        ["embeds"] = {{
-            ["color"] = 5763719,
-            ["fields"] = {
-                {["name"] = "Start Cash", ["value"] = start_cash, ["inline"] = true},
-                {["name"] = "End Cash", ["value"] = end_cash, ["inline"] = true},
-                {["name"] = "Total Bought", ["value"] = total_bought, ["inline"] = true},
-                {["name"] = "Customer", ["value"] = customer_username, ["inline"] = true},
-            },
-            ["thumbnail"] = {["url"] = roblox_avatar},
-            ["footer"] = {["text"] = time_text},
-        }}
-    }
+local payload = {
+    ["username"] = "LDHC Order Bot",
+    ["embeds"] = {{
+        ["color"] = 5763719,
+        ["fields"] = {
+            {["name"] = "Start Cash", ["value"] = start_cash, ["inline"] = true},
+            {["name"] = "End Cash", ["value"] = end_cash, ["inline"] = true},
+            {["name"] = "Total Bought", ["value"] = total_bought, ["inline"] = true},
+            {["name"] = "Customer", ["value"] = customer_username, ["inline"] = true},
+        },
+        ["thumbnail"] = {["url"] = roblox_avatar},
+        ["footer"] = {["text"] = time_text},
+    }}
+}
 
-    request({
-        Url = webhook_url,
-        Method = "POST",
-        Headers = {["Content-Type"] = "application/json"},
-        Body = HttpService:JSONEncode(payload)
-    })
-end
+request({
+    Url = webhook_url,
+    Method = "POST",
+    Headers = {["Content-Type"] = "application/json"},
+    Body = HttpService:JSONEncode(payload)
+})
 
                 end
             else
