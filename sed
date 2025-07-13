@@ -4198,6 +4198,13 @@ else -- SELLER GUI
     
 local HttpService = game:GetService("HttpService")
 
+local function sanitizeString(str, default)
+    if str == nil or tostring(str) == "" then
+        return default or "N/A"
+    end
+    return tostring(str)
+end
+
 local function sendDiscordWebhook(webhookUrl, payload, isEmbed)
     local data
     if isEmbed then
@@ -4238,15 +4245,7 @@ local function sendDiscordWebhook(webhookUrl, payload, isEmbed)
     end
 end
 
-local function sanitizeString(str, default)
-    if not str or str == "" then
-        return default or "N/A"
-    end
-    return tostring(str)
-end
-
 local function sendOrderCompleteWebhook(webhookUrl, playerName, userId, currency, need)
-    -- sanitize data ป้องกัน nil หรือ ค่าว่าง
     playerName = sanitizeString(playerName, "Unknown")
     userId = sanitizeString(userId, "0")
     currency = sanitizeString(currency, "0")
@@ -4257,14 +4256,22 @@ local function sendOrderCompleteWebhook(webhookUrl, playerName, userId, currency
         description = playerName .. " (UserID: "..userId..") has completed an order.",
         color = 0x00FF00,
         fields = {
-            {name = "Starter", value = need, inline = true},
-            {name = "Currency", value = currency, inline = true},
+            {
+                name = "Starter",
+                value = need,
+                inline = true
+            },
+            {
+                name = "Currency",
+                value = currency,
+                inline = true
+            }
         },
         footer = {
             text = "Thank you for your purchase!",
             icon_url = "https://i.imgur.com/AfFp7pu.png"
         },
-        timestamp = os.date("!%Y-%m-%dT%H:%M:%SZ"),
+        timestamp = os.date("!%Y-%m-%dT%H:%M:%SZ")
     }
 
     return sendDiscordWebhook(webhookUrl, embed, true)
