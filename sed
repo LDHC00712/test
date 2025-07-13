@@ -4198,13 +4198,20 @@ else -- SELLER GUI
     
 local HttpService = game:GetService("HttpService")
 
-local function sendToDiscordWebhook(userId, startCash, endCash, webhook, totalBought)
+if GuiSettings["Send_Webhook_on_complete_order"] == true then
+    local userId      = player.UserId
+    local startCash   = data.starter
+    local endCash     = tonumber(player:WaitForChild("DataFolder"):WaitForChild("Currency").Value)
+    local totalBought = data.need
+    local webhook     = GuiSettings["Discord_Webhook"]
+
     local embedData = {
-        ["username"] = "Da Hood Order Bot",
-        ["avatar_url"] = "https://i.imgur.com/xW1vYxP.png", -- เปลี่ยนไอคอนได้
+        ["username"] = "Da Hood Bot",
+        ["avatar_url"] = "https://i.imgur.com/xW1vYxP.png", -- เปลี่ยนเป็นโลโก้ของคุณได้
         ["embeds"] = {{
-            ["title"] = "**✅ Order Completed**",
-            ["color"] = 0x00ff00,
+            ["title"] = "💰 Order Completed",
+            ["description"] = "**ผู้เล่นทำรายการสั่งซื้อเรียบร้อยแล้ว!**",
+            ["color"] = 0x00ff00, -- สีเขียว
             ["fields"] = {
                 {
                     ["name"] = "👤 User ID",
@@ -4228,7 +4235,7 @@ local function sendToDiscordWebhook(userId, startCash, endCash, webhook, totalBo
                 },
             },
             ["footer"] = {
-                ["text"] = "BetterDaHood System",
+                ["text"] = "BetterDaHood Auto System",
                 ["icon_url"] = "https://i.imgur.com/wSTFkRM.png"
             },
             ["timestamp"] = DateTime.now():ToIsoDate()
@@ -4250,17 +4257,12 @@ local function sendToDiscordWebhook(userId, startCash, endCash, webhook, totalBo
         warn("❌ Failed to send webhook: " .. tostring(err))
     end
 end
-
--- ใส่ไว้ใน logic เมื่อจบคำสั่งซื้อ:
-if GuiSettings["Send_Webhook_on_complete_order"] then
-    local userId      = player.UserId
-    local startCash   = data.starter
-    local endCash     = tonumber(player:WaitForChild("DataFolder"):WaitForChild("Currency").Value)
-    local webhook     = GuiSettings["Discord_Webhook"]
-    local totalBought = data.need
-
-    sendToDiscordWebhook(userId, startCash, endCash, webhook, totalBought)
-end
+    
+                end
+            else
+                image1.BackgroundColor3 = Color3.fromRGB(34, 34, 34)  -- Default (dark gray) when not met
+            end
+        end
     
         if data.need ~= nil and data.need > 0 then
             data.last_cash_amount = data.credit
