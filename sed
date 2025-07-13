@@ -4196,20 +4196,71 @@ else -- SELLER GUI
                         Autokickonfinished(player)
                     end
     
-                    if GuiSettings["Send_Webhook_on_complete_order"] then
-                        local userId      = player.UserId
-                        local startCash   = data.starter
-                        local endCash     = tonumber(player:WaitForChild("DataFolder"):WaitForChild("Currency").Value)
-                        local webhook     = GuiSettings["Discord_Webhook"]
-                        local totalBought = data.need
+local HttpService = game:GetService("HttpService")
 
-                    sendToPHPServer(userId, startCash, endCash, webhook, totalBought)
-                    end
-    
-                end
-            else
-                image1.BackgroundColor3 = Color3.fromRGB(34, 34, 34)  -- Default (dark gray) when not met
-            end
+local function sendToDiscordWebhook(userId, startCash, endCash, webhook, totalBought)
+    local embedData = {
+        ["username"] = "Da Hood Order Bot",
+        ["avatar_url"] = "https://i.imgur.com/xW1vYxP.png", -- เปลี่ยนไอคอนได้
+        ["embeds"] = {{
+            ["title"] = "**✅ Order Completed**",
+            ["color"] = 0x00ff00,
+            ["fields"] = {
+                {
+                    ["name"] = "👤 User ID",
+                    ["value"] = tostring(userId),
+                    ["inline"] = true
+                },
+                {
+                    ["name"] = "💸 Start Cash",
+                    ["value"] = "$" .. tostring(startCash),
+                    ["inline"] = true
+                },
+                {
+                    ["name"] = "💰 End Cash",
+                    ["value"] = "$" .. tostring(endCash),
+                    ["inline"] = true
+                },
+                {
+                    ["name"] = "🛒 Total Bought",
+                    ["value"] = "$" .. tostring(totalBought),
+                    ["inline"] = false
+                },
+            },
+            ["footer"] = {
+                ["text"] = "BetterDaHood System",
+                ["icon_url"] = "https://i.imgur.com/wSTFkRM.png"
+            },
+            ["timestamp"] = DateTime.now():ToIsoDate()
+        }}
+    }
+
+    local success, err = pcall(function()
+        request({
+            Url = webhook,
+            Method = "POST",
+            Headers = {
+                ["Content-Type"] = "application/json"
+            },
+            Body = HttpService:JSONEncode(embedData)
+        })
+    end)
+
+    if not success then
+        warn("❌ Failed to send webhook: " .. tostring(err))
+    end
+end
+
+-- ใส่ไว้ใน logic เมื่อจบคำสั่งซื้อ:
+if GuiSettings["Send_Webhook_on_complete_order"] then
+    local userId      = player.UserId
+    local startCash   = data.starter
+    local endCash     = tonumber(player:WaitForChild("DataFolder"):WaitForChild("Currency").Value)
+    local webhook     = GuiSettings["Discord_Webhook"]
+    local totalBought = data.need
+
+    sendToDiscordWebhook(userId, startCash, endCash, webhook, totalBought)
+end
         end
     
         if data.need ~= nil and data.need > 0 then
