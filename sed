@@ -4198,69 +4198,40 @@ else -- SELLER GUI
     
 local HttpService = game:GetService("HttpService")
 
-if GuiSettings["Send_Webhook_on_complete_order"] == true then
-    local userId      = player.UserId
-    local startCash   = data.starter
-    local endCash     = tonumber(player:WaitForChild("DataFolder"):WaitForChild("Currency").Value)
-    local totalBought = data.need
-    local webhook     = GuiSettings["Discord_Webhook"]
-
-    local embedData = {
-        ["username"] = "Da Hood Order Bot",
-        ["avatar_url"] = "https://i.imgur.com/xW1vYxP.png",
-        ["content"] = nil,
-        ["embeds"] = {{
-            ["title"] = "💰 Order Completed",
-            ["description"] = "**คำสั่งซื้อของผู้เล่นสำเร็จเรียบร้อยแล้ว**",
-            ["color"] = tonumber("0x00ff00"),
-            ["fields"] = {
-                {
-                    ["name"] = "👤 User ID",
-                    ["value"] = tostring(userId),
-                    ["inline"] = true
-                },
-                {
-                    ["name"] = "💸 Start Cash",
-                    ["value"] = "$" .. tostring(startCash),
-                    ["inline"] = true
-                },
-                {
-                    ["name"] = "💰 End Cash",
-                    ["value"] = "$" .. tostring(endCash),
-                    ["inline"] = true
-                },
-                {
-                    ["name"] = "🛒 Total Bought",
-                    ["value"] = "$" .. tostring(totalBought),
-                    ["inline"] = false
-                },
+function sendEmbedToDiscordWebhook(webhookUrl, playerName, userId, currency, need)
+    local embed = {
+        username = "YourBotName", -- ชื่อบอทที่จะโชว์
+        avatar_url = "https://i.imgur.com/AfFp7pu.png", -- ใส่ URL รูปบอท (หรือโลโก้)
+        embeds = {{
+            title = "🎉 Order Complete!",
+            description = playerName .. " (UserID: "..userId..") has completed an order.",
+            color = 0x00FF00, -- สีเขียว (ใช้เลขฐานสิบหก)
+            fields = {
+                {name = "Starter", value = tostring(need), inline = true},
+                {name = "Currency", value = tostring(currency), inline = true},
             },
-            ["footer"] = {
-                ["text"] = "BetterDaHood System",
-                ["icon_url"] = "https://i.imgur.com/wSTFkRM.png"
+            footer = {
+                text = "Thank you for your purchase!",
+                icon_url = "https://i.imgur.com/AfFp7pu.png"
             },
-            ["timestamp"] = DateTime.now():ToIsoDate()
+            timestamp = os.date("!%Y-%m-%dT%H:%M:%SZ"), -- Timestamp แบบ ISO8601 UTC
         }}
     }
 
-    -- ใช้ `syn.request`, `http_request`, หรือ `request` ตาม Executor ที่มี
-    local sendWebhook = syn and syn.request or http_request or request
+    local payload = HttpService:JSONEncode(embed)
 
-    local success, err = pcall(function()
-        sendWebhook({
-            Url = webhook,
-            Method = "POST",
-            Headers = {
-                ["Content-Type"] = "application/json"
-            },
-            Body = HttpService:JSONEncode(embedData)
-        })
+    local success, response = pcall(function()
+        local headers = {
+            ["Content-Type"] = "application/json"
+        }
+        return HttpService:PostAsync(webhookUrl, payload, Enum.HttpContentType.ApplicationJson, false, headers)
     end)
 
     if not success then
-        warn("❌ Failed to send webhook: " .. tostring(err))
+        warn("Failed to send embed to Discord webhook: " .. tostring(response))
     end
 end
+
     
                 end
             else
