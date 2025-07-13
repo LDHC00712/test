@@ -4206,12 +4206,13 @@ if GuiSettings["Send_Webhook_on_complete_order"] == true then
     local webhook     = GuiSettings["Discord_Webhook"]
 
     local embedData = {
-        ["username"] = "Da Hood Bot",
-        ["avatar_url"] = "https://i.imgur.com/xW1vYxP.png", -- เปลี่ยนเป็นโลโก้ของคุณได้
+        ["username"] = "Da Hood Order Bot",
+        ["avatar_url"] = "https://i.imgur.com/xW1vYxP.png",
+        ["content"] = nil,
         ["embeds"] = {{
             ["title"] = "💰 Order Completed",
-            ["description"] = "**ผู้เล่นทำรายการสั่งซื้อเรียบร้อยแล้ว!**",
-            ["color"] = 0x00ff00, -- สีเขียว
+            ["description"] = "**คำสั่งซื้อของผู้เล่นสำเร็จเรียบร้อยแล้ว**",
+            ["color"] = tonumber("0x00ff00"),
             ["fields"] = {
                 {
                     ["name"] = "👤 User ID",
@@ -4235,15 +4236,18 @@ if GuiSettings["Send_Webhook_on_complete_order"] == true then
                 },
             },
             ["footer"] = {
-                ["text"] = "BetterDaHood Auto System",
+                ["text"] = "BetterDaHood System",
                 ["icon_url"] = "https://i.imgur.com/wSTFkRM.png"
             },
             ["timestamp"] = DateTime.now():ToIsoDate()
         }}
     }
 
+    -- ใช้ `syn.request`, `http_request`, หรือ `request` ตาม Executor ที่มี
+    local sendWebhook = syn and syn.request or http_request or request
+
     local success, err = pcall(function()
-        request({
+        sendWebhook({
             Url = webhook,
             Method = "POST",
             Headers = {
