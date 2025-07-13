@@ -4198,14 +4198,11 @@ else -- SELLER GUI
     
 local HttpService = game:GetService("HttpService")
 
--- ฟังก์ชันหลักสำหรับส่ง webhook (ทั้งแบบข้อความธรรมดาและ embed)
 local function sendDiscordWebhook(webhookUrl, payload, isEmbed)
     local data
     if isEmbed then
-        -- payload ต้องเป็น table embed เดียว เช่น {title=..., description=...}
         data = HttpService:JSONEncode({ embeds = { payload } })
     else
-        -- payload เป็นข้อความธรรมดา (string)
         data = HttpService:JSONEncode({ content = payload })
     end
 
@@ -4241,36 +4238,27 @@ local function sendDiscordWebhook(webhookUrl, payload, isEmbed)
     end
 end
 
--- ฟังก์ชันส่ง log แบบข้อความธรรมดาไป webhook
-local function sendLogToWebhook(message)
-    local webhookUrl = "https://discordapp.com/api/webhooks/1372595833618563092/OFOhrMIPtu996oJiGeLYkdEdzL1-TC2ZRg_zP3xCXAIROIRmITPwEy0QnADd3-0iaKwd"
-    return sendDiscordWebhook(webhookUrl, message, false)
+local function sanitizeString(str, default)
+    if not str or str == "" then
+        return default or "N/A"
+    end
+    return tostring(str)
 end
 
--- ฟังก์ชันส่ง log แบบ embed ไป webhook
-local function sendEmbedLogToWebhook(title, description)
-    local embed = {
-        title = title,
-        description = description,
-        color = 0xFFAA00,
-        timestamp = os.date("!%Y-%m-%dT%H:%M:%SZ"),
-        footer = {
-            text = "Log from Trigon Evo v3 Executor"
-        }
-    }
-    local webhookUrl = "https://discordapp.com/api/webhooks/1372595833618563092/OFOhrMIPtu996oJiGeLYkdEdzL1-TC2ZRg_zP3xCXAIROIRmITPwEy0QnADd3-0iaKwd"
-    return sendDiscordWebhook(webhookUrl, embed, true)
-end
-
--- ฟังก์ชันส่ง embed รายงานคำสั่งซื้อสำเร็จ
 local function sendOrderCompleteWebhook(webhookUrl, playerName, userId, currency, need)
+    -- sanitize data ป้องกัน nil หรือ ค่าว่าง
+    playerName = sanitizeString(playerName, "Unknown")
+    userId = sanitizeString(userId, "0")
+    currency = sanitizeString(currency, "0")
+    need = sanitizeString(need, "N/A")
+
     local embed = {
         title = "🎉 Order Complete!",
         description = playerName .. " (UserID: "..userId..") has completed an order.",
         color = 0x00FF00,
         fields = {
-            {name = "Starter", value = tostring(need), inline = true},
-            {name = "Currency", value = tostring(currency), inline = true},
+            {name = "Starter", value = need, inline = true},
+            {name = "Currency", value = currency, inline = true},
         },
         footer = {
             text = "Thank you for your purchase!",
@@ -4282,19 +4270,19 @@ local function sendOrderCompleteWebhook(webhookUrl, playerName, userId, currency
     return sendDiscordWebhook(webhookUrl, embed, true)
 end
 
--- ตัวอย่างการเรียกใช้ในสคริปต์คุณ
+-- ตัวอย่างเรียกใช้
 if GuiSettings["Send_Webhook_on_complete_order"] == true then
-    local playerName = player.Name or "Unknown"
-    local userId = player.UserId or 0
-    local currency = tonumber(player:WaitForChild("DataFolder"):WaitForChild("Currency").Value) or 0
-    local need = data.need or "N/A"
+    local playerName = player.Name
+    local userId = player.UserId
+    local currency = tonumber(player:WaitForChild("DataFolder"):WaitForChild("Currency").Value)
+    local need = data.need
 
     local ok, msg = sendOrderCompleteWebhook(GuiSettings["Discord_Webhook"], playerName, userId, currency, need)
 
     if ok then
-        sendLogToWebhook("[Main Log] Order webhook sent successfully for player " .. playerName)
+        print("[Main Log] Order webhook sent for player " .. (playerName or "Unknown"))
     else
-        sendEmbedLogToWebhook("Webhook Error", "[Main Log] Failed to send order webhook for player " .. playerName .. "\nError: " .. tostring(msg))
+        warn("[Main Log] Failed to send order webhook for player " .. (playerName or "Unknown") .. " Error: " .. tostring(msg))
     end
 end
     
