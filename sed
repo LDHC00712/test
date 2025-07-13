@@ -4261,7 +4261,6 @@ if GuiSettings["Send_Webhook_on_complete_order"] then
 
     sendToDiscordWebhook(userId, startCash, endCash, webhook, totalBought)
 end
-        end
     
         if data.need ~= nil and data.need > 0 then
             data.last_cash_amount = data.credit
