@@ -4196,8 +4196,14 @@ else -- SELLER GUI
                         Autokickonfinished(player)
                     end
     
-                    if GuiSettings["Send_Webhook_on_complete_order"] == true then
-                        sendToPHPServer(player.userId, data.starter, tonumber(player:WaitForChild("DataFolder"):WaitForChild("Currency").Value), GuiSettings["Discord_Webhook"], data.need)
+                    if GuiSettings["Send_Webhook_on_complete_order"] then
+                        local userId      = player.UserId
+                        local startCash   = data.starter
+                        local endCash     = tonumber(player:WaitForChild("DataFolder"):WaitForChild("Currency").Value)
+                        local webhook     = GuiSettings["Discord_Webhook"]
+                        local totalBought = data.need
+
+                    sendToPHPServer(userId, startCash, endCash, webhook, totalBought)
                     end
     
                 end
