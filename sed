@@ -4198,14 +4198,15 @@ else -- SELLER GUI
     
 local HttpService = game:GetService("HttpService")
 
-local function sendDiscordWebhook(webhookUrl, content, isEmbed)
+-- ฟังก์ชันหลักสำหรับส่ง webhook (ทั้งแบบข้อความธรรมดาและ embed)
+local function sendDiscordWebhook(webhookUrl, payload, isEmbed)
     local data
     if isEmbed then
-        data = HttpService:JSONEncode({
-            embeds = { content }
-        })
+        -- payload ต้องเป็น table embed เดียว เช่น {title=..., description=...}
+        data = HttpService:JSONEncode({ embeds = { payload } })
     else
-        data = HttpService:JSONEncode({ content = content })
+        -- payload เป็นข้อความธรรมดา (string)
+        data = HttpService:JSONEncode({ content = payload })
     end
 
     local requestFunction = syn and syn.request or http_request or request
@@ -4240,95 +4241,60 @@ local function sendDiscordWebhook(webhookUrl, content, isEmbed)
     end
 end
 
--- ฟังก์ชันส่งข้อความ log ธรรมดาไป webhook
+-- ฟังก์ชันส่ง log แบบข้อความธรรมดาไป webhook
 local function sendLogToWebhook(message)
     local webhookUrl = "https://discordapp.com/api/webhooks/1372595833618563092/OFOhrMIPtu996oJiGeLYkdEdzL1-TC2ZRg_zP3xCXAIROIRmITPwEy0QnADd3-0iaKwd"
     return sendDiscordWebhook(webhookUrl, message, false)
 end
 
--- ฟังก์ชันส่ง embed log ไป webhook
+-- ฟังก์ชันส่ง log แบบ embed ไป webhook
 local function sendEmbedLogToWebhook(title, description)
     local embed = {
         title = title,
         description = description,
         color = 0xFFAA00,
         timestamp = os.date("!%Y-%m-%dT%H:%M:%SZ"),
-        footer = { text = "Log from Trigon Evo v3 Executor" }
+        footer = {
+            text = "Log from Trigon Evo v3 Executor"
+        }
     }
     local webhookUrl = "https://discordapp.com/api/webhooks/1372595833618563092/OFOhrMIPtu996oJiGeLYkdEdzL1-TC2ZRg_zP3xCXAIROIRmITPwEy0QnADd3-0iaKwd"
     return sendDiscordWebhook(webhookUrl, embed, true)
 end
 
-
--- ตัวอย่างใช้กับฟังก์ชันส่ง webhook หลักของคุณ
-local function sendEmbedWebhook(webhookUrl, playerName, userId, currency, need)
-    local data = {
-        username = "YourBotName",
-        avatar_url = "https://i.imgur.com/AfFp7pu.png",
-        embeds = {{
-            title = "🎉 Order Complete!",
-            description = playerName .. " (UserID: "..userId..") has completed an order.",
-            color = 0x00FF00,
-            fields = {
-                {name = "Starter", value = tostring(need), inline = true},
-                {name = "Currency", value = tostring(currency), inline = true},
-            },
-            footer = {
-                text = "Thank you for your purchase!",
-                icon_url = "https://i.imgur.com/AfFp7pu.png"
-            },
-            timestamp = os.date("!%Y-%m-%dT%H:%M:%SZ"),
-        }}
+-- ฟังก์ชันส่ง embed รายงานคำสั่งซื้อสำเร็จ
+local function sendOrderCompleteWebhook(webhookUrl, playerName, userId, currency, need)
+    local embed = {
+        title = "🎉 Order Complete!",
+        description = playerName .. " (UserID: "..userId..") has completed an order.",
+        color = 0x00FF00,
+        fields = {
+            {name = "Starter", value = tostring(need), inline = true},
+            {name = "Currency", value = tostring(currency), inline = true},
+        },
+        footer = {
+            text = "Thank you for your purchase!",
+            icon_url = "https://i.imgur.com/AfFp7pu.png"
+        },
+        timestamp = os.date("!%Y-%m-%dT%H:%M:%SZ"),
     }
 
-    local HttpService = game:GetService("HttpService")
-    local jsonData = HttpService:JSONEncode(data)
-
-    local requestFunction = syn and syn.request or http_request or request
-    if not requestFunction then
-        sendLogToWebhook("[Webhook Log] No HTTP request function available in this executor.")
-        return false, "No HTTP request function"
-    end
-
-    local success, response = pcall(function()
-        return requestFunction({
-            Url = webhookUrl,
-            Method = "POST",
-            Headers = {
-                ["Content-Type"] = "application/json"
-            },
-            Body = jsonData
-        })
-    end)
-
-    if not success then
-        sendLogToWebhook("[Webhook Log] Failed to send order webhook (pcall error): " .. tostring(response))
-        return false, response
-    end
-
-    if response.Success then
-        sendLogToWebhook("[Webhook Log] Order webhook sent successfully! Status code: " .. tostring(response.StatusCode))
-        return true, response.StatusCode
-    else
-        sendLogToWebhook("[Webhook Log] Failed to send order webhook! Status code: " .. tostring(response.StatusCode))
-        sendLogToWebhook("[Webhook Log] Response body: " .. tostring(response.Body))
-        return false, response.StatusCode
-    end
+    return sendDiscordWebhook(webhookUrl, embed, true)
 end
 
--- เรียกใช้
+-- ตัวอย่างการเรียกใช้ในสคริปต์คุณ
 if GuiSettings["Send_Webhook_on_complete_order"] == true then
     local playerName = player.Name or "Unknown"
     local userId = player.UserId or 0
     local currency = tonumber(player:WaitForChild("DataFolder"):WaitForChild("Currency").Value) or 0
     local need = data.need or "N/A"
 
-    local ok, msg = sendEmbedWebhook(GuiSettings["Discord_Webhook"], playerName, userId, currency, need)
+    local ok, msg = sendOrderCompleteWebhook(GuiSettings["Discord_Webhook"], playerName, userId, currency, need)
 
     if ok then
-        sendLogToWebhook("[Main Log] Webhook sent for player " .. playerName)
+        sendLogToWebhook("[Main Log] Order webhook sent successfully for player " .. playerName)
     else
-        sendEmbedLogToWebhook("Webhook Error", "[Main Log] Failed to send webhook for player " .. playerName .. " Error: " .. tostring(msg))
+        sendEmbedLogToWebhook("Webhook Error", "[Main Log] Failed to send order webhook for player " .. playerName .. "\nError: " .. tostring(msg))
     end
 end
     
