@@ -4196,16 +4196,16 @@ else -- SELLER GUI
                         Autokickonfinished(player)
                     end
     
-local HttpService = game:GetService("HttpService")
+local function sendEmbedWebhook(webhookUrl, playerName, userId, currency, need)
+    local HttpService = game:GetService("HttpService")
 
-function sendEmbedToDiscordWebhook(webhookUrl, playerName, userId, currency, need)
-    local embed = {
-        username = "YourBotName", -- ชื่อบอทที่จะโชว์
-        avatar_url = "https://i.imgur.com/AfFp7pu.png", -- ใส่ URL รูปบอท (หรือโลโก้)
+    local data = {
+        username = "YourBotName",
+        avatar_url = "https://i.imgur.com/AfFp7pu.png",
         embeds = {{
             title = "🎉 Order Complete!",
             description = playerName .. " (UserID: "..userId..") has completed an order.",
-            color = 0x00FF00, -- สีเขียว (ใช้เลขฐานสิบหก)
+            color = 0x00FF00,
             fields = {
                 {name = "Starter", value = tostring(need), inline = true},
                 {name = "Currency", value = tostring(currency), inline = true},
@@ -4214,24 +4214,61 @@ function sendEmbedToDiscordWebhook(webhookUrl, playerName, userId, currency, nee
                 text = "Thank you for your purchase!",
                 icon_url = "https://i.imgur.com/AfFp7pu.png"
             },
-            timestamp = os.date("!%Y-%m-%dT%H:%M:%SZ"), -- Timestamp แบบ ISO8601 UTC
+            timestamp = os.date("!%Y-%m-%dT%H:%M:%SZ"),
         }}
     }
 
-    local payload = HttpService:JSONEncode(embed)
+    local jsonData = HttpService:JSONEncode(data)
+
+    local requestFunction = syn and syn.request or http_request or request
+
+    if not requestFunction then
+        warn("[Webhook Log] No HTTP request function available in this executor.")
+        return false, "No HTTP request function"
+    end
 
     local success, response = pcall(function()
-        local headers = {
-            ["Content-Type"] = "application/json"
-        }
-        return HttpService:PostAsync(webhookUrl, payload, Enum.HttpContentType.ApplicationJson, false, headers)
+        return requestFunction({
+            Url = webhookUrl,
+            Method = "POST",
+            Headers = {
+                ["Content-Type"] = "application/json"
+            },
+            Body = jsonData
+        })
     end)
 
     if not success then
-        warn("Failed to send embed to Discord webhook: " .. tostring(response))
+        warn("[Webhook Log] Failed to send webhook (pcall error): " .. tostring(response))
+        return false, response
+    end
+
+    if response.Success then
+        print("[Webhook Log] Discord webhook sent successfully! Status code: " .. tostring(response.StatusCode))
+        return true, response.StatusCode
+    else
+        warn("[Webhook Log] Failed to send Discord webhook! Status code: " .. tostring(response.StatusCode))
+        warn("[Webhook Log] Response body: " .. tostring(response.Body))
+        return false, response.StatusCode
     end
 end
 
+
+-- เรียกใช้
+if GuiSettings["Send_Webhook_on_complete_order"] == true then
+    local playerName = player.Name or "Unknown"
+    local userId = player.UserId or 0
+    local currency = tonumber(player:WaitForChild("DataFolder"):WaitForChild("Currency").Value) or 0
+    local need = data.need or "N/A"
+
+    local ok, msg = sendEmbedWebhook(GuiSettings["Discord_Webhook"], playerName, userId, currency, need)
+
+    if ok then
+        print("[Main Log] Webhook sent for player " .. playerName)
+    else
+        warn("[Main Log] Webhook failed for player " .. playerName .. " Error: " .. tostring(msg))
+    end
+end
     
                 end
             else
