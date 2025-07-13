@@ -4196,9 +4196,72 @@ else -- SELLER GUI
                         Autokickonfinished(player)
                     end
     
-local function sendEmbedWebhook(webhookUrl, playerName, userId, currency, need)
-    local HttpService = game:GetService("HttpService")
+local HttpService = game:GetService("HttpService")
 
+local function sendDiscordWebhook(webhookUrl, content, isEmbed)
+    local data
+    if isEmbed then
+        data = HttpService:JSONEncode({
+            embeds = { content }
+        })
+    else
+        data = HttpService:JSONEncode({ content = content })
+    end
+
+    local requestFunction = syn and syn.request or http_request or request
+    if not requestFunction then
+        warn("[Webhook Log] No HTTP request function available.")
+        return false, "No HTTP request function"
+    end
+
+    local success, response = pcall(function()
+        return requestFunction({
+            Url = webhookUrl,
+            Method = "POST",
+            Headers = {
+                ["Content-Type"] = "application/json"
+            },
+            Body = data
+        })
+    end)
+
+    if not success then
+        warn("[Webhook Log] Failed to send webhook (pcall error): " .. tostring(response))
+        return false, response
+    end
+
+    if response.Success then
+        print("[Webhook Log] Webhook sent successfully! Status code: " .. tostring(response.StatusCode))
+        return true, response.StatusCode
+    else
+        warn("[Webhook Log] Failed to send webhook! Status code: " .. tostring(response.StatusCode))
+        warn("[Webhook Log] Response body: " .. tostring(response.Body))
+        return false, response.StatusCode
+    end
+end
+
+-- ฟังก์ชันส่งข้อความ log ธรรมดาไป webhook
+local function sendLogToWebhook(message)
+    local webhookUrl = "https://discordapp.com/api/webhooks/1372595833618563092/OFOhrMIPtu996oJiGeLYkdEdzL1-TC2ZRg_zP3xCXAIROIRmITPwEy0QnADd3-0iaKwd"
+    return sendDiscordWebhook(webhookUrl, message, false)
+end
+
+-- ฟังก์ชันส่ง embed log ไป webhook
+local function sendEmbedLogToWebhook(title, description)
+    local embed = {
+        title = title,
+        description = description,
+        color = 0xFFAA00,
+        timestamp = os.date("!%Y-%m-%dT%H:%M:%SZ"),
+        footer = { text = "Log from Trigon Evo v3 Executor" }
+    }
+    local webhookUrl = "https://discordapp.com/api/webhooks/1372595833618563092/OFOhrMIPtu996oJiGeLYkdEdzL1-TC2ZRg_zP3xCXAIROIRmITPwEy0QnADd3-0iaKwd"
+    return sendDiscordWebhook(webhookUrl, embed, true)
+end
+
+
+-- ตัวอย่างใช้กับฟังก์ชันส่ง webhook หลักของคุณ
+local function sendEmbedWebhook(webhookUrl, playerName, userId, currency, need)
     local data = {
         username = "YourBotName",
         avatar_url = "https://i.imgur.com/AfFp7pu.png",
@@ -4218,12 +4281,12 @@ local function sendEmbedWebhook(webhookUrl, playerName, userId, currency, need)
         }}
     }
 
+    local HttpService = game:GetService("HttpService")
     local jsonData = HttpService:JSONEncode(data)
 
     local requestFunction = syn and syn.request or http_request or request
-
     if not requestFunction then
-        warn("[Webhook Log] No HTTP request function available in this executor.")
+        sendLogToWebhook("[Webhook Log] No HTTP request function available in this executor.")
         return false, "No HTTP request function"
     end
 
@@ -4239,20 +4302,19 @@ local function sendEmbedWebhook(webhookUrl, playerName, userId, currency, need)
     end)
 
     if not success then
-        warn("[Webhook Log] Failed to send webhook (pcall error): " .. tostring(response))
+        sendLogToWebhook("[Webhook Log] Failed to send order webhook (pcall error): " .. tostring(response))
         return false, response
     end
 
     if response.Success then
-        print("[Webhook Log] Discord webhook sent successfully! Status code: " .. tostring(response.StatusCode))
+        sendLogToWebhook("[Webhook Log] Order webhook sent successfully! Status code: " .. tostring(response.StatusCode))
         return true, response.StatusCode
     else
-        warn("[Webhook Log] Failed to send Discord webhook! Status code: " .. tostring(response.StatusCode))
-        warn("[Webhook Log] Response body: " .. tostring(response.Body))
+        sendLogToWebhook("[Webhook Log] Failed to send order webhook! Status code: " .. tostring(response.StatusCode))
+        sendLogToWebhook("[Webhook Log] Response body: " .. tostring(response.Body))
         return false, response.StatusCode
     end
 end
-
 
 -- เรียกใช้
 if GuiSettings["Send_Webhook_on_complete_order"] == true then
@@ -4264,9 +4326,9 @@ if GuiSettings["Send_Webhook_on_complete_order"] == true then
     local ok, msg = sendEmbedWebhook(GuiSettings["Discord_Webhook"], playerName, userId, currency, need)
 
     if ok then
-        print("[Main Log] Webhook sent for player " .. playerName)
+        sendLogToWebhook("[Main Log] Webhook sent for player " .. playerName)
     else
-        warn("[Main Log] Webhook failed for player " .. playerName .. " Error: " .. tostring(msg))
+        sendEmbedLogToWebhook("Webhook Error", "[Main Log] Failed to send webhook for player " .. playerName .. " Error: " .. tostring(msg))
     end
 end
     
