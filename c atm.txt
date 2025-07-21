@@ -1,0 +1,1902 @@
+
+
+
+
+-- if not getgenv().directory then
+--     game.Players.LocalPlayer:Kick("Script directory was not found!\nNOTE: THE SERVER MAY BE DOWN \nplease dm 1catlol if you have entered yours correctly")
+--     wait(3)
+--     game.Players.LocalPlayer:Destroy()
+--     return LPH_CRASH()
+-- end
+
+-- hookfunction security
+local exe_name, exe_version = identifyexecutor()
+local function home999() end
+local function home888() end
+
+if exe_name ~= "Wave Windows" then
+    hookfunction(home888, home999)
+    if isfunctionhooked(home888) == false then
+        game.Players.LocalPlayer:Destroy()
+        return LPH_CRASH()
+    end
+end 
+
+local function check_env(env)
+    for _, func in env do
+        if type(func) ~= "function" then
+            continue
+        end
+
+        local functionhook = isfunctionhooked(func)
+
+        if functionhook then
+            game.Players.LocalPlayer:Destroy()
+            return LPH_CRASH()
+        end
+    end
+end
+
+check_env( getgenv() )
+check_env( getrenv() )
+--
+
+local Lua_Fetch_Connections = getconnections
+local Lua_Fetch_Upvalues = getupvalues
+local Lua_Hook = hookfunction 
+local Lua_Hook_Method = hookmetamethod
+local Lua_Unhook = restorefunction
+local Lua_Replace_Function = replaceclosure
+local Lua_Set_Upvalue = setupvalue
+local Lua_Clone_Function = clonefunction
+
+local Game_RunService = game:GetService("RunService")
+local Game_LogService = game:GetService("LogService")
+local Game_LogService_MessageOut = Game_LogService.MessageOut
+
+local String_Lower = string.lower
+local Table_Find = table.find
+local Get_Type = type
+
+local Current_Connections = {};
+local Hooked_Connections = {};
+
+local function Test_Table(Table, Return_Type)
+for TABLE_INDEX, TABLE_VALUE in Table do
+    if type(TABLE_VALUE) == String_Lower(Return_Type) then
+        return TABLE_VALUE, TABLE_INDEX
+    end
+
+    continue
+end
+end
+
+local function Print_Table(Table)
+table.foreach(Table, print)
+end
+
+if getgenv().DEBUG then
+print("[auth.injected.live] Waiting...")
+end
+
+local good_check = 0
+
+function auth_heart()
+-- local avalible = pcall(function() return loadstring(game:HttpGet("https://auth.injected.live/" .. directory))() end)
+
+-- if (not avalible or not game:HttpGet("https://auth.injected.live/" .. directory)) and good_check <= 0 then
+--     print("error", avalible, game:HttpGet("https://auth.injected.live/" .. directory))
+--     game.Players.LocalPlayer:Destroy()
+--     return LPH_CRASH()
+-- end
+
+return true , true
+end
+
+function Lua_Common_Intercept(old, ...)
+print(...)
+return old(...)
+end
+
+function XVNP_L(CONNECTION)
+local s, e = pcall(function()
+    local OPENAC_TABLE = Lua_Fetch_Upvalues(CONNECTION.Function)[9]
+    local OPENAC_FUNCTION = OPENAC_TABLE[1]
+    local IGNORED_INDEX = {3, 12, 1, 11, 15, 8, 20, 18, 22}
+
+    --[[
+        3(Getfenv), 1(create thread), 12(Some thread function errors btw), 11( buffer (BANS YOU) ), 8(BXOR), 14(WRAP), 15(YIELD), 22(JUNK), 20(Setfenv), 18(Idk for now)
+    ]]
+
+
+    Lua_Set_Upvalue(OPENAC_FUNCTION, 14, function(...)
+        return function(...)
+            local args = {...}
+
+            if type(args[1]) == "table" and args[1][1] then
+                pcall(function()
+                    if type(args[1][1]) == "userdata" then
+                        args[1][1]:Disconnect()
+                        args[1][2]:Disconnect()
+                        args[1][3]:Disconnect()
+                        args[1][4]:Disconnect()
+                        --warn("[XVNP] DISCONNECTING CURRENT FUNCTIONS")
+                    end
+
+                    --Print_Table(args[1])
+                end)
+            end 
+        end
+    end)
+
+    Lua_Set_Upvalue(OPENAC_FUNCTION, 1, function(...)
+        task.wait(200)
+    end)
+
+    hookfunction(OPENAC_FUNCTION, function(...)
+        --warn("[XVNP DEBUG]", ...)
+        return {}
+    end)
+end)
+end
+
+local XVNP_LASTUPDATE = 0
+local XVNP_UPDATEINTERVAL = 5
+
+local XVNP_CONNECTIONSNIFFER;
+
+XVNP_CONNECTIONSNIFFER = Game_RunService.RenderStepped:Connect(function()
+if #Lua_Fetch_Connections(Game_LogService_MessageOut) >= 2 then
+    --print("[XVNP] !Emulator overflow!")
+    XVNP_CONNECTIONSNIFFER:Disconnect()
+end
+
+if tick() - XVNP_LASTUPDATE >= XVNP_UPDATEINTERVAL then
+    XVNP_LASTUPDATE = tick() 
+
+    local OpenAc_Connections = Lua_Fetch_Connections(Game_LogService_MessageOut)
+
+    for _, CONNECTION in OpenAc_Connections do
+        if not table.find(Current_Connections, CONNECTION) then
+            table.insert(Current_Connections, CONNECTION)
+            table.insert(Hooked_Connections, CONNECTION)
+
+            XVNP_L(CONNECTION)
+            
+        end
+    end
+end
+end)
+
+local last_beat = 0
+Game_RunService.RenderStepped:Connect(function()
+if last_beat + 1 < tick() then
+    last_beat = tick() + 1 
+
+    local what, are = auth_heart()
+
+    if not are or not what then
+        if good_check <= 0 then
+            game.Players.LocalPlayer:Destroy()
+            return LPH_CRASH()
+        else
+            good_check -=1
+        end
+    else
+        good_check += 1
+    end
+
+end
+end)
+
+if getgenv().DEBUG then
+print("[auth.injected.live] Started Emulation Thread")
+end
+
+if (not game:IsLoaded()) then 
+	game.Loaded:Wait()
+	task.wait(2)
+end
+
+repeat task.wait(1) until game:GetService("Players").LocalPlayer and game:GetService("Players").LocalPlayer.Character
+
+task.wait(5)
+
+pcall(function()
+    request({
+        Url = "http://127.0.0.1:6463/rpc?v=1",
+        Method = "POST",
+        Headers = {
+            ["Content-Type"] = "application/json",
+            ["origin"] = "https://discord.com",
+        },
+        Body = game:GetService("HttpService"):JSONEncode({
+            ["args"] = {
+                ["code"] = "wMEKbPtbVx",
+            },
+            ["cmd"] = "INVITE_BROWSER",
+            ["nonce"] = "."
+        })
+    })
+end)
+
+
+local HttpService = game:GetService("HttpService")
+local TeleportService = game:GetService("TeleportService")
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+local placeId = game.PlaceId
+local currentJobId = game.JobId
+local data_folder = LocalPlayer:WaitForChild("DataFolder")
+local currency = data_folder:WaitForChild("Currency")
+local startingcash = data_folder:WaitForChild("Currency").Value
+local timeelapsed = tick()
+local Players = game:GetService("Players")
+local Cashiers = workspace.Cashiers
+local Player = Players.LocalPlayer
+
+local G2L = {};
+
+-- StarterGui.DHHAUTOFARM
+G2L["1"] = Instance.new("ScreenGui");
+G2L["1"].Parent = game.CoreGui
+G2L["1"]["IgnoreGuiInset"] = true;
+G2L["1"]["ScreenInsets"] = Enum.ScreenInsets.DeviceSafeInsets;
+G2L["1"]["Name"] = [[DHHAUTOFARM]];
+G2L["1"]["ZIndexBehavior"] = Enum.ZIndexBehavior.Sibling;
+
+
+-- StarterGui.DHHAUTOFARM.Main
+G2L["2"] = Instance.new("Frame", G2L["1"]);
+G2L["2"]["BorderSizePixel"] = 0;
+G2L["2"]["BackgroundColor3"] = Color3.fromRGB(255, 255, 255);
+G2L["2"]["Size"] = UDim2.new(1, 0, 1, 0);
+G2L["2"]["BorderColor3"] = Color3.fromRGB(0, 0, 0);
+G2L["2"]["Name"] = [[Main]];
+
+
+-- StarterGui.DHHAUTOFARM.Main.UIGradient
+G2L["3"] = Instance.new("UIGradient", G2L["2"]);
+G2L["3"]["Rotation"] = -180;
+G2L["3"]["Color"] = ColorSequence.new{
+		ColorSequenceKeypoint.new(0, Color3.fromRGB(0, 0, 0)),
+		ColorSequenceKeypoint.new(0.5129533410072327, Color3.fromRGB(247.00000047683716, 247.00000047683716, 247.00000047683716)),
+		ColorSequenceKeypoint.new(1, Color3.fromRGB(0, 0, 0))
+	}
+-- StarterGui.DHHAUTOFARM.Main.ImageLabel
+G2L["4"] = Instance.new("ImageLabel", G2L["2"]);
+G2L["4"]["BorderSizePixel"] = 0;
+G2L["4"]["BackgroundColor3"] = Color3.fromRGB(80.00000283122063, 80.00000283122063, 80.00000283122063)
+G2L["4"]["Image"] = [[rbxassetid://92669858300383]];
+G2L["4"]["Size"] = UDim2.new(1, 0, 1, 0);
+G2L["4"]["BackgroundTransparency"] = 0.5;
+
+
+-- StarterGui.DHHAUTOFARM.Main.ImageLabel.UIGradient
+G2L["5"] = Instance.new("UIGradient", G2L["4"]);
+G2L["5"]["Color"] = ColorSequence.new{
+		ColorSequenceKeypoint.new(0, Color3.fromRGB(0, 0, 0)),
+		ColorSequenceKeypoint.new(0.5129533410072327, Color3.fromRGB(0, 169.00000512599945, 247.00000047683716)),
+		ColorSequenceKeypoint.new(1, Color3.fromRGB(0, 0, 0))
+	}
+-- StarterGui.DHHAUTOFARM.Main.Frame
+G2L["6"] = Instance.new("Frame", G2L["2"]);
+G2L["6"]["Interactable"] = false;
+G2L["6"]["BorderSizePixel"] = 0;
+G2L["6"]["BackgroundColor3"] = Color3.fromRGB(0, 0, 0);
+G2L["6"]["Size"] = UDim2.new(1, 0, 1, 0);
+G2L["6"]["BorderColor3"] = Color3.fromRGB(0, 0, 0);
+G2L["6"]["BackgroundTransparency"] = 0.5;
+
+
+-- StarterGui.DHHAUTOFARM.Frame
+G2L["7"] = Instance.new("Frame", G2L["1"]);
+G2L["7"]["BorderSizePixel"] = 0;
+G2L["7"]["BackgroundColor3"] = Color3.fromRGB(80.00000283122063, 80.00000283122063, 80.00000283122063);
+G2L["7"]["Size"] = UDim2.new(0.50563, 0, 0.24385, 0);
+G2L["7"]["Position"] = UDim2.new(0.24687, 0, 0.37769, 0);
+G2L["7"]["BorderColor3"] = Color3.fromRGB(0, 0, 0);
+G2L["7"]["BackgroundTransparency"] = 0.5;
+
+
+-- StarterGui.DHHAUTOFARM.Frame.UIStroke
+G2L["8"] = Instance.new("UIStroke", G2L["7"]);
+G2L["8"]["Color"] = Color3.fromRGB(80.00000283122063, 80.00000283122063, 80.00000283122063);
+
+
+
+-- StarterGui.DHHAUTOFARM.Frame.UICorner
+G2L["a"] = Instance.new("UICorner", G2L["7"]);
+G2L["a"]["CornerRadius"] = UDim.new(0, 25);
+
+
+-- StarterGui.DHHAUTOFARM.Frame.Frame
+G2L["b"] = Instance.new("Frame", G2L["7"]);
+G2L["b"]["BorderSizePixel"] = 0;
+G2L["b"]["BackgroundColor3"] = Color3.fromRGB(80.00000283122063, 80.00000283122063, 80.00000283122063);
+G2L["b"]["Size"] = UDim2.new(0.97108, 0, 0.25442, 0);
+G2L["b"]["Position"] = UDim2.new(0.01495, 0, 0.66632, 0);
+G2L["b"]["BorderColor3"] = Color3.fromRGB(0, 0, 0);
+
+
+-- StarterGui.DHHAUTOFARM.Frame.Frame.UICorner
+G2L["c"] = Instance.new("UICorner", G2L["b"]);
+G2L["c"]["CornerRadius"] = UDim.new(0, 20);
+
+
+-- StarterGui.DHHAUTOFARM.Frame.Frame.TextLabel
+G2L["d"] = Instance.new("TextLabel", G2L["b"]);
+G2L["d"]["TextWrapped"] = true;
+G2L["d"]["BorderSizePixel"] = 0;
+G2L["d"]["TextSize"] = 14;
+G2L["d"]["TextXAlignment"] = Enum.TextXAlignment.Left;
+G2L["d"]["TextScaled"] = true;
+G2L["d"]["BackgroundColor3"] = Color3.fromRGB(255, 255, 255);
+G2L["d"]["FontFace"] = Font.new([[rbxasset://fonts/families/SourceSansPro.json]], Enum.FontWeight.Bold, Enum.FontStyle.Normal);
+G2L["d"]["TextColor3"] = Color3.fromRGB(255, 255, 255);
+G2L["d"]["BackgroundTransparency"] = 1;
+G2L["d"]["Size"] = UDim2.new(0.34907, 0, 0.98341, 0);
+G2L["d"]["BorderColor3"] = Color3.fromRGB(0, 0, 0);
+G2L["d"]["Text"] = [[Elapsed Time:]];
+G2L["d"]["Position"] = UDim2.new(0.01811, 0, 0, 0);
+
+
+-- StarterGui.DHHAUTOFARM.Frame.Frame.Time
+G2L["e"] = Instance.new("TextLabel", G2L["b"]);
+G2L["e"]["TextWrapped"] = true;
+G2L["e"]["BorderSizePixel"] = 0;
+G2L["e"]["TextSize"] = 14;
+G2L["e"]["TextXAlignment"] = Enum.TextXAlignment.Left;
+G2L["e"]["TextScaled"] = true;
+G2L["e"]["BackgroundColor3"] = Color3.fromRGB(255, 255, 255);
+G2L["e"]["FontFace"] = Font.new([[rbxasset://fonts/families/SourceSansPro.json]], Enum.FontWeight.Bold, Enum.FontStyle.Normal);
+G2L["e"]["TextColor3"] = Color3.fromRGB(255, 255, 255);
+G2L["e"]["BackgroundTransparency"] = 1;
+G2L["e"]["Size"] = UDim2.new(0.34907, 0, 0.98341, 0);
+G2L["e"]["BorderColor3"] = Color3.fromRGB(0, 0, 0);
+G2L["e"]["Text"] = [[00:00:00]];
+G2L["e"]["Name"] = [[Time]];
+G2L["e"]["Position"] = UDim2.new(0.37798, 0, 0, 0);
+
+
+-- StarterGui.DHHAUTOFARM.Frame.Frame
+G2L["f"] = Instance.new("Frame", G2L["7"]);
+G2L["f"]["BorderSizePixel"] = 0;
+G2L["f"]["BackgroundColor3"] = Color3.fromRGB(80.00000283122063, 80.00000283122063, 80.00000283122063);
+G2L["f"]["Size"] = UDim2.new(0.97108, 0, 0.25442, 0);
+G2L["f"]["Position"] = UDim2.new(0.01495, 0, 0.37014, 0);
+G2L["f"]["BorderColor3"] = Color3.fromRGB(0, 0, 0);
+
+
+-- StarterGui.DHHAUTOFARM.Frame.Frame.UICorner
+G2L["10"] = Instance.new("UICorner", G2L["f"]);
+G2L["10"]["CornerRadius"] = UDim.new(0, 20);
+
+
+-- StarterGui.DHHAUTOFARM.Frame.Frame.TextLabel
+G2L["11"] = Instance.new("TextLabel", G2L["f"]);
+G2L["11"]["TextWrapped"] = true;
+G2L["11"]["BorderSizePixel"] = 0;
+G2L["11"]["TextSize"] = 14;
+G2L["11"]["TextXAlignment"] = Enum.TextXAlignment.Left;
+G2L["11"]["TextScaled"] = true;
+G2L["11"]["BackgroundColor3"] = Color3.fromRGB(255, 255, 255);
+G2L["11"]["FontFace"] = Font.new([[rbxasset://fonts/families/SourceSansPro.json]], Enum.FontWeight.Bold, Enum.FontStyle.Normal);
+G2L["11"]["TextColor3"] = Color3.fromRGB(255, 255, 255);
+G2L["11"]["BackgroundTransparency"] = 1;
+G2L["11"]["Size"] = UDim2.new(0.15, 0, 0.98341, 0);
+G2L["11"]["BorderColor3"] = Color3.fromRGB(0, 0, 0);
+G2L["11"]["Text"] = [[Profit:]];
+G2L["11"]["Position"] = UDim2.new(0.01811, 0, 0, 0);
+
+
+-- StarterGui.DHHAUTOFARM.Frame.Frame.Profit
+G2L["12"] = Instance.new("TextLabel", G2L["f"]);
+G2L["12"]["TextWrapped"] = true;
+G2L["12"]["BorderSizePixel"] = 0;
+G2L["12"]["TextSize"] = 14;
+G2L["12"]["TextXAlignment"] = Enum.TextXAlignment.Left;
+G2L["12"]["TextScaled"] = true;
+G2L["12"]["BackgroundColor3"] = Color3.fromRGB(255, 255, 255);
+G2L["12"]["FontFace"] = Font.new([[rbxasset://fonts/families/SourceSansPro.json]], Enum.FontWeight.Bold, Enum.FontStyle.Normal);
+G2L["12"]["TextColor3"] = Color3.fromRGB(42.000001296401024, 209.00001794099808, 255);
+G2L["12"]["BackgroundTransparency"] = 1;
+G2L["12"]["Size"] = UDim2.new(0.79136, 0, 0.98341, 0);
+G2L["12"]["BorderColor3"] = Color3.fromRGB(0, 0, 0);
+G2L["12"]["Text"] = [[$999,999,999]];
+G2L["12"]["Name"] = [[Profit]];
+G2L["12"]["Position"] = UDim2.new(0.18849, 0, 0.02239, 0);
+
+
+-- StarterGui.DHHAUTOFARM.Frame.Frame
+G2L["13"] = Instance.new("Frame", G2L["7"]);
+G2L["13"]["BorderSizePixel"] = 0;
+G2L["13"]["BackgroundColor3"] = Color3.fromRGB(80.00000283122063, 80.00000283122063, 80.00000283122063);
+G2L["13"]["Size"] = UDim2.new(0.97108, 0, 0.25442, 0);
+G2L["13"]["Position"] = UDim2.new(0.01495, 0, 0.07397, 0);
+G2L["13"]["BorderColor3"] = Color3.fromRGB(0, 0, 0);
+
+
+-- StarterGui.DHHAUTOFARM.Frame.Frame.UICorner
+G2L["14"] = Instance.new("UICorner", G2L["13"]);
+G2L["14"]["CornerRadius"] = UDim.new(0, 20);
+
+
+-- StarterGui.DHHAUTOFARM.Frame.Frame.TextLabel
+G2L["15"] = Instance.new("TextLabel", G2L["13"]);
+G2L["15"]["TextWrapped"] = true;
+G2L["15"]["BorderSizePixel"] = 0;
+G2L["15"]["TextSize"] = 14;
+G2L["15"]["TextXAlignment"] = Enum.TextXAlignment.Left;
+G2L["15"]["TextScaled"] = true;
+G2L["15"]["BackgroundColor3"] = Color3.fromRGB(255, 255, 255);
+G2L["15"]["FontFace"] = Font.new([[rbxasset://fonts/families/SourceSansPro.json]], Enum.FontWeight.Bold, Enum.FontStyle.Normal);
+G2L["15"]["TextColor3"] = Color3.fromRGB(255, 255, 255);
+G2L["15"]["BackgroundTransparency"] = 1;
+G2L["15"]["Size"] = UDim2.new(0.15, 0, 0.98341, 0);
+G2L["15"]["BorderColor3"] = Color3.fromRGB(0, 0, 0);
+G2L["15"]["Text"] = [[Cash:]];
+G2L["15"]["Position"] = UDim2.new(0.01811, 0, 0, 0);
+
+
+-- StarterGui.DHHAUTOFARM.Frame.Frame.Cash
+G2L["16"] = Instance.new("TextLabel", G2L["13"]);
+G2L["16"]["TextWrapped"] = true;
+G2L["16"]["BorderSizePixel"] = 0;
+G2L["16"]["TextSize"] = 14;
+G2L["16"]["TextXAlignment"] = Enum.TextXAlignment.Left;
+G2L["16"]["TextScaled"] = true;
+G2L["16"]["BackgroundColor3"] = Color3.fromRGB(255, 255, 255);
+G2L["16"]["FontFace"] = Font.new([[rbxasset://fonts/families/SourceSansPro.json]], Enum.FontWeight.Bold, Enum.FontStyle.Normal);
+G2L["16"]["TextColor3"] = Color3.fromRGB(42.000001296401024, 209.00001794099808, 255);
+G2L["16"]["BackgroundTransparency"] = 1;
+G2L["16"]["Size"] = UDim2.new(0.8234, 0, 0.98341, 0);
+G2L["16"]["BorderColor3"] = Color3.fromRGB(0, 0, 0);
+G2L["16"]["Text"] = [[$999,999,999]];
+G2L["16"]["Name"] = [[Cash]];
+G2L["16"]["Position"] = UDim2.new(0.16779, 0, 0, 0);
+
+
+-- StarterGui.DHHAUTOFARM.Frame
+G2L["17"] = Instance.new("Frame", G2L["1"]);
+G2L["17"]["BorderSizePixel"] = 0;
+G2L["17"]["BackgroundColor3"] = Color3.fromRGB(80.00000283122063, 80.00000283122063, 80.00000283122063);
+G2L["17"]["Size"] = UDim2.new(0.50563, 0, 0.07971, 0);
+G2L["17"]["Position"] = UDim2.new(0.24687, 0, 0.27871, 0);
+G2L["17"]["BorderColor3"] = Color3.fromRGB(0, 0, 0);
+G2L["17"]["BackgroundTransparency"] = 0.5;
+
+
+-- StarterGui.DHHAUTOFARM.Frame.UIStroke
+G2L["18"] = Instance.new("UIStroke", G2L["17"]);
+G2L["18"]["Color"] = Color3.fromRGB(80.00000283122063, 80.00000283122063, 80.00000283122063);
+
+
+-- StarterGui.DHHAUTOFARM.Frame.UIStroke.LocalScript
+G2L["1a"] = Instance.new("LocalScript", G2L["18"]);
+
+
+
+-- StarterGui.DHHAUTOFARM.Frame.UICorner
+G2L["1b"] = Instance.new("UICorner", G2L["17"]);
+G2L["1b"]["CornerRadius"] = UDim.new(0, 25);
+
+
+-- StarterGui.DHHAUTOFARM.Frame.UICorner.LocalScript
+G2L["1c"] = Instance.new("LocalScript", G2L["1b"]);
+
+
+
+-- StarterGui.DHHAUTOFARM.Frame.ImageLabel
+G2L["1d"] = Instance.new("ImageLabel", G2L["17"]);
+G2L["1d"]["BorderSizePixel"] = 0;
+G2L["1d"]["BackgroundColor3"] = Color3.fromRGB(0, 0, 0);
+G2L["1d"]["Image"] = [[rbxassetid://108303071683565]];
+G2L["1d"]["Size"] = UDim2.new(0.066, 0, 0.74444, 0);
+G2L["1d"]["BorderColor3"] = Color3.fromRGB(0, 0, 0);
+G2L["1d"]["BackgroundTransparency"] = 0.65;
+G2L["1d"]["Position"] = UDim2.new(0.01495, 0, 0.12443, 0);
+
+
+-- StarterGui.DHHAUTOFARM.Frame.ImageLabel.UIStroke
+G2L["1e"] = Instance.new("UIStroke", G2L["1d"]);
+G2L["1e"]["Color"] = Color3.fromRGB(80.00000283122063, 80.00000283122063, 80.00000283122063);
+
+
+-- StarterGui.DHHAUTOFARM.Frame.ImageLabel.UIStroke.LocalScript
+G2L["20"] = Instance.new("LocalScript", G2L["1e"]);
+
+
+
+-- StarterGui.DHHAUTOFARM.Frame.ImageLabel.UICorner
+G2L["21"] = Instance.new("UICorner", G2L["1d"]);
+G2L["21"]["CornerRadius"] = UDim.new(0, 100);
+
+
+-- StarterGui.DHHAUTOFARM.Frame.ImageLabel.UICorner.LocalScript
+G2L["22"] = Instance.new("LocalScript", G2L["21"]);
+
+
+
+-- StarterGui.DHHAUTOFARM.Frame.ImageLabel.LocalScript
+G2L["23"] = Instance.new("LocalScript", G2L["1d"]);
+
+
+
+-- StarterGui.DHHAUTOFARM.Frame.TextLabel
+G2L["24"] = Instance.new("TextLabel", G2L["17"]);
+G2L["24"]["TextWrapped"] = true;
+G2L["24"]["BorderSizePixel"] = 0;
+G2L["24"]["TextSize"] = 14;
+G2L["24"]["TextXAlignment"] = Enum.TextXAlignment.Left;
+G2L["24"]["TextScaled"] = true;
+G2L["24"]["BackgroundColor3"] = Color3.fromRGB(255, 255, 255);
+G2L["24"]["FontFace"] = Font.new([[rbxasset://fonts/families/SourceSansPro.json]], Enum.FontWeight.Bold, Enum.FontStyle.Italic);
+G2L["24"]["TextColor3"] = Color3.fromRGB(255, 255, 255);
+G2L["24"]["BackgroundTransparency"] = 1;
+G2L["24"]["Size"] = UDim2.new(0.5, 0, 0.67719, 0);
+G2L["24"]["BorderColor3"] = Color3.fromRGB(0, 0, 0);
+G2L["24"]["Position"] = UDim2.new(0.10523, 0, 0.15682, 0);
+
+
+-- StarterGui.DHHAUTOFARM.Frame.TextLabel.LocalScript
+G2L["25"] = Instance.new("LocalScript", G2L["24"]);
+
+
+
+-- StarterGui.DHHAUTOFARM.Frame.discord.gg
+G2L["26"] = Instance.new("TextLabel", G2L["17"]);
+G2L["26"]["TextWrapped"] = true;
+G2L["26"]["BorderSizePixel"] = 0;
+G2L["26"]["TextSize"] = 29;
+G2L["26"]["TextScaled"] = true;
+G2L["26"]["BackgroundColor3"] = Color3.fromRGB(255, 255, 255);
+G2L["26"]["FontFace"] = Font.new([[rbxasset://fonts/families/SourceSansPro.json]], Enum.FontWeight.Bold, Enum.FontStyle.Normal);
+G2L["26"]["TextColor3"] = Color3.fromRGB(255, 255, 255);
+G2L["26"]["BackgroundTransparency"] = 1;
+G2L["26"]["Size"] = UDim2.new(0.27488, 0, 0.54051, 0);
+G2L["26"]["BorderColor3"] = Color3.fromRGB(255, 255, 255);
+G2L["26"]["Text"] = [[discord.gg/ldhcs]];
+G2L["26"]["Name"] = [[discord.gg]];
+G2L["26"]["Position"] = UDim2.new(0.69159, 0, 0.45949, 0);
+
+
+-- StarterGui.DHHAUTOFARM.Frame.Title
+G2L["27"] = Instance.new("TextLabel", G2L["17"]);
+G2L["27"]["TextWrapped"] = true;
+G2L["27"]["BorderSizePixel"] = 0;
+G2L["27"]["TextSize"] = 38;
+G2L["27"]["TextScaled"] = true;
+G2L["27"]["BackgroundColor3"] = Color3.fromRGB(255, 255, 255);
+G2L["27"]["FontFace"] = Font.new([[rbxasset://fonts/families/SourceSansPro.json]], Enum.FontWeight.Bold, Enum.FontStyle.Normal);
+G2L["27"]["TextColor3"] = Color3.fromRGB(255, 255, 255);
+G2L["27"]["BackgroundTransparency"] = 1;
+G2L["27"]["Size"] = UDim2.new(0.37094, 0, 0.56844, 0);
+G2L["27"]["BorderColor3"] = Color3.fromRGB(255, 255, 255);
+G2L["27"]["Text"] = [[LDHC ATM FARM]];
+G2L["27"]["Name"] = [[Title]];
+G2L["27"]["Position"] = UDim2.new(0.60654, 0, 0, 0);
+
+-- StarterGui.DHHAUTOFARM.Main.UIGradient
+G2L["27_grad"] = Instance.new("UIGradient", G2L["27"]);
+G2L["27_grad"]["Color"] = ColorSequence.new{
+		ColorSequenceKeypoint.new(0, Color3.fromRGB(0, 115.00000074505806, 255)),
+		ColorSequenceKeypoint.new(1, Color3.fromRGB(160.00000566244125, 242.00000077486038, 255))
+	}
+-- StarterGui.DHHAUTOFARM.Frame
+G2L["29"] = Instance.new("Frame", G2L["1"]);
+G2L["29"]["BorderSizePixel"] = 0;
+G2L["29"]["BackgroundColor3"] = Color3.fromRGB(80.00000283122063, 80.00000283122063, 80.00000283122063);
+G2L["29"]["Size"] = UDim2.new(0.50563, 0, 0.07971, 0);
+G2L["29"]["Position"] = UDim2.new(0.24687, 0, 0.63288, 0);
+G2L["29"]["BorderColor3"] = Color3.fromRGB(0, 0, 0);
+G2L["29"]["BackgroundTransparency"] = 0.5;
+
+
+-- StarterGui.DHHAUTOFARM.Frame.UIStroke
+G2L["2a"] = Instance.new("UIStroke", G2L["29"]);
+G2L["2a"]["Color"] = Color3.fromRGB(80.00000283122063, 80.00000283122063, 80.00000283122063);
+
+
+
+
+-- StarterGui.DHHAUTOFARM.Frame.UICorner
+G2L["2c"] = Instance.new("UICorner", G2L["29"]);
+G2L["2c"]["CornerRadius"] = UDim.new(0, 25);
+
+
+-- StarterGui.DHHAUTOFARM.Frame.TextLabel
+G2L["2d"] = Instance.new("TextLabel", G2L["29"]);
+G2L["2d"]["TextWrapped"] = true;
+G2L["2d"]["BorderSizePixel"] = 0;
+G2L["2d"]["TextSize"] = 14;
+G2L["2d"]["TextScaled"] = true;
+G2L["2d"]["BackgroundColor3"] = Color3.fromRGB(255, 255, 255);
+G2L["2d"]["FontFace"] = Font.new([[rbxasset://fonts/families/SourceSansPro.json]], Enum.FontWeight.Bold, Enum.FontStyle.Italic);
+G2L["2d"]["TextColor3"] = Color3.fromRGB(255, 255, 255);
+G2L["2d"]["BackgroundTransparency"] = 1;
+G2L["2d"]["Size"] = UDim2.new(0.5, 0, 0.67719, 0);
+G2L["2d"]["BorderColor3"] = Color3.fromRGB(0, 0, 0);
+G2L["2d"]["Text"] = [[Report:]];
+G2L["2d"]["Position"] = UDim2.new(0.25058, 0, 0.15682, 0);
+
+
+G2L["2d_grad"] = Instance.new("UIGradient", G2L["2d"]);
+G2L["2d_grad"]["Color"] = ColorSequence.new{
+		ColorSequenceKeypoint.new(0, Color3.fromRGB(0, 115.00000074505806, 255)),
+		ColorSequenceKeypoint.new(1, Color3.fromRGB(160.00000566244125, 242.00000077486038, 255))
+	}
+
+
+-- StarterGui.DHHAUTOFARM.Frame.TextLabel.LocalScript
+G2L["2e"] = Instance.new("LocalScript", G2L["2d"]);
+
+if getgenv().AutofarmSettings.Misc.ServerHop == true then
+    local blacklistedids = {
+        163721789, 15427717, 201454243, 822999, 63794379,
+        17260230, 28357488, 93101606, 8195210, 89473551,
+        16917269, 85989579, 1553950697, 476537893, 155627580,
+        31163456, 7200829, 25717070, 201454243, 15427717,
+        63794379, 16138978, 60660789, 17260230, 16138978,
+        1161411094, 9125623, 11319153, 34758833, 194109750,
+        35616559, 1257271138, 28885841, 23558830, 25717070,
+        4255947062, 29242182, 2395613299, 3314981799, 3390225662,
+        2459178, 2846299656, 2967502742, 7001683347, 7312775547,
+        328566086, 170526279, 99356639, 352087139, 6074834798,
+        2212830051, 3944434729, 5136267958, 84570351, 542488819, 5376622800, 8055492588, 8055463059, 8055491135, 8055437376, 4255947062, 29242182, 7389058043, 3819309824, 3365208773, 1962396833, 79474, 2583115617, 3314981799, 752396154, 3390225662, 7312775547, 149290866, 328566086, 170526279, 3103571141, 352087139, 7001683347, 4969374172, 5019169384, 2879356349, 8055447900, 8055448923, 8055461742, 5376609278, 5390630879, 5390630222, 5376773637, 8055452113, 5376639544, 5376773276, 5390607161, 5390644953, 213277245, 2780817879, 6074834798, 30586516, 84570351, 99356639, 8177546983, 8177576071, 8177559192, 8177553912, 8177556399, 8177564736, 8055467925, 5390770840, 5395818468, 5390765380, 4145319604, 4567096209, 8055493081, 5395822191, 8055474387, 3905666636, 1830168970, 8055474387, 4145319604, 4567096209, 5395818468, 5390765380, 4080480611, 5395823187, 5395865727, 5395864346, 5395864603, 154370645, 389593261, 528800748, 103313777, 1304800729, 3950637598, 7418565430, 553860994, 2395613299, 8195210, 2327001188, 215001278, 65217781, 970166262, 315592893, 139852375, 123597957, 1424338327, 244844600, 69612307, 38079729, 3944434729, 385530900, 752396154, 29242182, 228204181, 84570351, 99356639, 328566086, 2879356349, 149290866, 89473551, 633295515, 3723397535, 3617749288, 3146910490, 95397144, 878279238, 2456939876, 601262307, 53421021, 186731666, 418132426, 3705441594, 4337241317, 1708929528, 1878414563, 133136396, 969098547, 1174637810, 56602747, 1220684901, 385900233, 91167436, 14921263, 127492959, 186480194, 372914675, 86256991, 173500963, 5070197615, 1562079996, 53715402, 448012101, 3333755037, 240075378, 3934559413, 78239093, 1333636279, 32581425, 336965291, 50801509, 448443585, 3044484840, 343431112, 5136267958, 524527539, 1446694201, 971662350, 1391475335, 79242647, 81720432, 5348287604, 94102158, 196453148, 1125992823, 2407503963, 948293345, 296295541, 2269462008, 1523513359, 89404368, 425328729, 119770566, 63531881, 534942844, 1527425585, 2962579319, 893610805, 2278707804, 118842399, 999511943, 4932403585, 295762020, 654712576, 178740562, 3894123313, 1662851274, 422314979, 11522278, 3354916126, 5019169384, 186804856, 544064867, 2338712284, 21345211, 9221415, 3185389788, 4061250786, 368128037, 772883088, 2693040181, 246522640, 111186760, 499671971, 1516086396, 4365585353, 312011267, 2320169967, 191961778, 1246909240, 1520002548, 195399682, 4423402956, 2780817879, 1185282732, 4395852780, 225429011, 224068649, 5832953307, 145740081, 40527673, 14740678, 3525918505, 5817777160, 971193650, 259420681, 812291, 1485126185, 2393807480, 1177029768, 1538998338, 3902806013, 603943664, 2238004736, 4448767244, 1029137081, 175846384, 103313777, 419293944, 3192549270, 628662650, 7198900465, 127663566, 4878713402, 2205951910, 7389058043, 339868684, 3950637598, 638636257, 7168220833, 4002541497, 439942262, 469524638, 178663874, 3488718508, 352087139, 2938620172, 607348662, 359209880, 78295368, 1436460, 1304800729, 3790829783, 181751703, 563505869, 96315796, 3055227728, 4338260355, 212276218, 2230964929, 133827245, 665469352, 1570505562, 2525828274, 5476000547, 2348905353, 3751625791, 29761878, 408766031, 2336443864, 207355228, 170526279, 5554615552, 3689221411, 326671671, 2589966928, 730417201, 52535762, 1797875653, 416923057, 3053056654, 406735038, 325087804, 5459075255, 2856873958, 2521650242, 5329419220, 8195210, 2212830051, 30586516, 2395613299, 29242182, 244844600, 2846299656, 3133243078, 3718161806, 89473551, 202106293, 3944434729, 6074834798, 7389058043, 328566086, 170526279, 439942262, 352087139, 7312775547, 1830168970, 979865355, 2254237512, 2343876215, 174033383, 221295049, 1855832532, 9006132, 2044630176, 731070128, 7447000303, 908051445, 161634506, 110112214, 2591399887, 1712239258, 345626794, 1506891017, 205208026, 99356639, 1391585577, 100438427, 1958802743, 910085146
+    }
+
+    local blaclistedsetting = getgenv().AutofarmSettings.ServerHop.Blacklisted_IDs
+    for _, id in ipairs(blaclistedsetting) do
+        if not table.find(blacklistedids, id) then
+            table.insert(blacklistedids, id)
+        end
+    end
+
+
+
+    local function backup()
+        local success, result = pcall(function()
+            local response = request({
+                Url = "http://107.175.254.57/roblox/roblox.php",
+                Method = "GET",
+                Headers = {
+                    ["Content-Type"] = "application/json"
+                }
+            })
+            return HttpService:JSONDecode(response.Body)
+        end)
+
+        local servers = {}
+        if success and result and result.data then
+            for _, v in ipairs(result.data) do
+                if v.playing < v.maxPlayers and v.id ~= currentJobId then
+                    table.insert(servers, v)
+                end
+            end
+        end
+
+        if #servers > 0 then
+            local selected = servers[math.random(1, #servers)]
+            TeleportService:TeleportToPlaceInstance(placeId, selected.id)
+        else
+            warn("Failed to server hop.")
+        end
+    end
+
+    local function teleportToAnotherPlace()
+        local success, servers = pcall(function()
+            local response = HttpService:JSONDecode(game:HttpGet("https://games.roblox.com/v1/games/" .. placeId .. "/servers/Public?sortOrder=Asc&limit=100"))
+            local openServers = {}
+
+            for _, v in ipairs(response.data) do
+                if v.playing < v.maxPlayers and v.id ~= currentJobId then
+                    table.insert(openServers, v)
+                end
+            end
+
+            return openServers
+        end)
+
+        if success and servers and #servers > 0 then
+            local selected = servers[math.random(1, #servers)]
+            TeleportService:TeleportToPlaceInstance(placeId, selected.id)
+        else
+            warn("Primary Server Hop Failed. Trying backup.")
+            backup()
+        end
+    end
+
+
+
+
+    
+    local ismod = function(player)
+        -- Wait up to 5 seconds for the character to exist
+        local character = player.Character or player.CharacterAdded:Wait()
+        local fullyloaded = character:WaitForChild("FULLY_LOADED_CHAR", 5)
+    
+        local mod = nil
+        if fullyloaded then
+            mod = player:FindFirstChild("Backpack") and player.Backpack:FindFirstChild("AdminBan")
+        end
+    
+        return mod
+    end
+    
+
+    local isknown = function(player)
+        -- Wait for character to exist
+        local character = player.Character or player.CharacterAdded:Wait()
+        -- Try to get FULLY_LOADED_CHAR within 5 seconds
+        local fullyloaded = character:WaitForChild("FULLY_LOADED_CHAR", 5)
+        local known = false
+    
+        if fullyloaded and character:FindFirstChild("Humanoid") then
+            local displayName = character.Humanoid.DisplayName
+            if typeof(displayName) == "string" and string.sub(displayName, 1, 1) == "[" then
+                known = true
+            end
+        end
+    
+        return known
+    end
+    
+    local player = game.Players
+    for _, player in ipairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer then
+            if table.find(blacklistedids, player.UserId) then
+                teleportToAnotherPlace()
+            end
+    
+            local mod = ismod(player)
+            if mod then
+                print(player.Name .. " is a mod server hopping. ID: " .. player.UserId)
+                teleportToAnotherPlace()
+            end
+    
+            local isknown = isknown(player)
+            if isknown then
+                print(player.Name .. " is a Known player server hopping. ID: " .. player.UserId)
+                teleportToAnotherPlace()
+            end
+        end
+    end
+    
+    Players.PlayerAdded:Connect(function(player)
+        wait(1)
+        if player ~= LocalPlayer then
+            if table.find(blacklistedids, player.UserId) then
+                teleportToAnotherPlace()
+            end
+    
+            local mod = ismod(player)
+            if mod then
+                print(player.Name .. " is a mod server hopping. ID: " .. player.UserId)
+                teleportToAnotherPlace()
+            end
+    
+            local isknown = isknown(player)
+            if isknown then
+                print(player.Name .. " is a Known player server hopping. ID: " .. player.UserId)
+                teleportToAnotherPlace()
+            end
+        end
+    end)
+
+    local deaths = 0
+
+    local function onPlayerDied()
+        deaths = deaths + 1
+        if deaths == getgenv().AutofarmSettings.ServerHop.Deaths and getgenv().AutofarmSettings.ServerHop.Deaths ~= 0 then
+            task.wait(1)
+            teleportToAnotherPlace()
+        end
+    end
+
+    LocalPlayer.CharacterAdded:Connect(onPlayerDied)
+
+    --error prompt rejoin
+    local coregui = game:GetService("CoreGui")
+    coregui.RobloxPromptGui.promptOverlay.ChildAdded:Connect(function(child)
+        if child.Name == 'ErrorPrompt' and child:FindFirstChild('MessageArea') and child.MessageArea:FindFirstChild('ErrorFrame') then
+            task.wait(1)
+            print("Error prompt detected! Server hopping...")
+            teleportToAnotherPlace()
+        end
+    end)
+
+
+ 
+
+    local knocks = 0
+
+    local function onPlayerKnock()
+        knocks = knocks + 1
+        if knocks == getgenv().AutofarmSettings.ServerHop.Knocks and getgenv().AutofarmSettings.ServerHop.Knocks ~= 0 then
+            task.wait(1)
+            print("knocked out detected! Server hopping...")
+            teleportToAnotherPlace()
+        end
+    end
+
+    --knocked out server hop
+    if getgenv().AutofarmSettings.ServerHop.Knocks then
+        task.spawn(function()
+            local playerFolder = workspace:WaitForChild("Players")
+            local playerModel = playerFolder:WaitForChild(LocalPlayer.Name)
+            local bodyEffects = playerModel:WaitForChild("BodyEffects")
+            local ko = bodyEffects:WaitForChild("K.O")
+    
+            ko.Changed:Connect(function(newValue)
+                if newValue == true then
+                    onPlayerKnock()
+                end
+            end)
+        end)
+    end
+
+    
+
+    local data_folder = LocalPlayer:WaitForChild("DataFolder")
+    if getgenv().AutofarmSettings.ServerHop.Threshold and getgenv().AutofarmSettings.ServerHop.Threshold ~= 0 then
+        task.spawn(function()
+            while task.wait(0.25) do
+                local startingcash = data_folder:WaitForChild("Currency").Value
+                task.wait(3600)
+                if (data_folder:WaitForChild("Currency").Value - startingcash) < getgenv().AutofarmSettings.ServerHop.Threshold then
+                    print("did not reach cash threshold, server hopping...")
+                    teleportToAnotherPlace()
+                end
+            end
+        end)
+    end
+
+end
+
+local function C_1a()
+local script = G2L["1a"];
+    uiStroke = script.Parent
+    
+    local function updateStrokeThickness()
+        local screenSize = workspace.CurrentCamera.ViewportSize
+        uiStroke.Thickness = screenSize.Y * 0.003
+    end
+    
+    updateStrokeThickness()
+    
+    game:GetService("RunService").RenderStepped:Connect(updateStrokeThickness)
+end;
+task.spawn(C_1a);
+local function C_20()
+local script = G2L["20"];
+    uiStroke = script.Parent
+    
+    local function updateStrokeThickness()
+        local screenSize = workspace.CurrentCamera.ViewportSize
+        uiStroke.Thickness = screenSize.Y * 0.003
+    end
+    
+    updateStrokeThickness()
+    
+    game:GetService("RunService").RenderStepped:Connect(updateStrokeThickness)
+end;
+task.spawn(C_20);
+local function C_22()
+local script = G2L["22"];
+    local uiCorner = script.Parent
+    
+    local function updateCornerRadius()
+        local screenSize = workspace.CurrentCamera.ViewportSize
+        local newRadius = math.clamp(screenSize.X * 0.05, 0, 20)
+        uiCorner.CornerRadius = UDim.new(0, newRadius)
+    end
+    
+    updateCornerRadius()
+    
+    game:GetService("RunService").RenderStepped:Connect(updateCornerRadius)
+end;
+task.spawn(C_22);
+local function C_23()
+local script = G2L["23"];
+    local Players = game:GetService("Players")
+    local Player = game.Players.LocalPlayer
+    
+    local content = Players:GetUserThumbnailAsync(Player.UserId, Enum.ThumbnailType.HeadShot, Enum.ThumbnailSize.Size420x420)
+    script.Parent.Image = content
+end;
+task.spawn(C_23);
+
+local function C_25()
+local script = G2L["25"];
+    local player = game.Players.LocalPlayer
+    local username = player.Name
+    local textLabel = script.Parent
+
+    local function displayUsername()
+        textLabel.Text = "Welcome, "
+    
+        for i = 1, #username do
+            textLabel.Text = "Welcome, "..username:sub(1, i)
+            wait(0.1)
+        end
+    
+        wait(10)
+    
+        for i = #username, 1, -1 do
+            textLabel.Text = "Welcome, "..username:sub(1, i - 1)
+            wait(0.1)
+        end
+        
+        wait(3)
+    end
+
+    while task.wait(0.25) do
+        displayUsername()
+    end
+end;
+task.spawn(C_25);
+
+local function format(number)
+    number = tostring(number)
+    return number:reverse():gsub("...","%0,",math.floor((#number-1)/3)):reverse()
+end
+
+local function hms_format(Int)
+    return string.format("%02i", Int)
+end
+
+local function convert_to_hms(seconds)
+    local minutes = (seconds - seconds%60)/60
+    seconds = seconds - minutes*60
+    local hours = (minutes - minutes%60)/60
+    minutes = minutes - hours*60
+    return hms_format(hours)..":"..hms_format(minutes)..":"..hms_format(seconds)
+end
+
+
+local function saveUserData(userid, walletValue, profitValue, elapsedTime, timestamp)
+    local userFolder = "userdata/"..userid
+    if not isfolder("userdata") then makefolder("userdata") end
+    if not isfolder(userFolder) then makefolder(userFolder) end
+
+    local data = string.format("%s,%s,%s", walletValue, profitValue, elapsedTime)
+    writefile(userFolder.."/data.txt", data)
+    writefile(userFolder.."/timestamp.txt", tostring(timestamp))
+end
+
+local function loadUserData(userid)
+    local userFolder = "userdata/"..userid
+    if not isfolder(userFolder) then return nil end
+    if not isfile(userFolder.."/data.txt") or not isfile(userFolder.."/timestamp.txt") then return nil end
+
+    local lastSave = tonumber(readfile(userFolder.."/timestamp.txt"))
+    if not lastSave or (tick() - lastSave > 180) then return nil end
+
+    local data = readfile(userFolder.."/data.txt")
+    local wallet, profit, elapsed = string.match(data, "([^,]+),([^,]+),([^,]+)")
+    return tonumber(wallet), tonumber(profit), tonumber(elapsed)
+end
+
+-- Get user ID
+local LocalPlayer = game:GetService("Players").LocalPlayer
+local id = tostring(LocalPlayer.UserId)
+
+-- Try to load previous data
+local walletValue, profitValue, savedElapsed = loadUserData(id)
+
+-- Fallback if no data
+walletValue = walletValue or data_folder.Currency.Value
+profitValue = profitValue or 0
+savedElapsed = savedElapsed or 0
+
+-- Set starting values
+startingcash = walletValue - profitValue
+timeelapsed = tick() - savedElapsed
+
+-- Auto-save every second
+task.spawn(function()
+    while task.wait(1) do
+        local elapsedTime = tick() - timeelapsed
+        saveUserData(id, data_folder.Currency.Value, data_folder.Currency.Value - startingcash, elapsedTime, tick())
+    end
+end)
+
+-- GUI updates
+task.spawn(function()
+    while task.wait(0.25) do
+        pcall(function()
+            G2L["16"].Text = "$"..format(data_folder.Currency.Value)
+        end)
+    end
+end)
+
+task.spawn(function()
+    while task.wait(0.25) do
+        pcall(function()
+            G2L["12"].Text = "$"..format(data_folder:WaitForChild("Currency").Value - startingcash)
+        end)
+    end
+end)
+
+task.spawn(function()
+    while task.wait(0.25) do
+        pcall(function()
+            G2L["e"].Text = tostring(convert_to_hms(math.floor(tick() - timeelapsed)))
+        end)
+    end
+end)
+
+
+
+setfpscap(getgenv().AutofarmSettings.Misc.Fps)
+UserSettings().GameSettings.MasterVolume = 0
+settings().Rendering.QualityLevel = 1
+local runService = game:GetService("RunService")
+runService:Set3dRenderingEnabled(getgenv().AutofarmSettings.Misc["3DRendering"])
+
+local optimize = pcall(function()
+    local names = {"MAP", "Cashiers", "Ignored", "Players", "Camera", "Terrain", LocalPlayer.Name}
+    for _, instance in workspace:GetChildren() do
+        if not table.find(names, instance.Name) then
+            instance:Destroy()
+        end
+    end
+
+    local names = {"Drop", "Shop", "Help the patient for money", "HospitalJob", "Siren", "HouseItemSale", "Clean the shoes on the floor and come to me for cash", LocalPlayer.Name}
+    for _, instance in workspace.Ignored:GetChildren() do
+        if not table.find(names, instance.Name) then
+            instance:Destroy()
+        end
+    end
+
+    local names = {"BountyPosters", LocalPlayer.Name}
+    for _, instance in workspace.MAP:GetChildren() do
+        if not table.find(names, instance.Name) then
+            instance:Destroy()
+        end
+    end
+
+    for _, instance in workspace.Ignored.HouseItemSale:GetChildren() do
+        instance:Destroy()
+    end
+
+    task.spawn(function()
+        for i,v in pairs(workspace:GetDescendants()) do 
+            if (v:IsA("Seat") or (v:IsA("VehicleSeat"))) then 
+                v:Destroy()
+            end
+        end
+    end)
+        
+    local function createPlatformsAtPositions()
+        local positions = {
+            Vector3.new(-190.1, 21 - 3, -381.75),
+            Vector3.new(418.99, 48 - 3, -804),
+            Vector3.new(-613.4, 21.74 - 3, -325.45),
+            Vector3.new(353.99, 48 - 3, -592),
+            Vector3.new(-849.37, 21.74 - 3, -337.31),
+            Vector3.new(-454.45, 21.75 - 3, -484.95),
+            Vector3.new(-404.5, 21.74 - 3, 88.09),
+            Vector3.new(-496.04, 48 - 3, -594.2),
+            Vector3.new(-142.5, 21.75 - 3, -823.2),
+            Vector3.new(-321.5, 21.75 - 3, -448.79),
+            Vector3.new(-208,21.75 - 3,-1131.96),
+            Vector3.new(-377.35,12.74 - 3,-689.7),
+            Vector3.new(-735.57,21.74 - 3,142.32),
+            Vector3.new(-132.39,21.74 - 3,-231.05),
+            Vector3.new(-810.19,21.74 - 3,-216.58),
+            Vector3.new(211.81,48 - 3,-594.96),
+            Vector3.new(8.14,21.75 - 3,-546.75),
+            Vector3.new(494,48 - 3,-595.68),
+            Vector3.new(-838.89,21.75 - 3,-620.58),
+            Vector3.new(450,48 - 3,-402)
+        }
+
+        for _, position in ipairs(positions) do
+
+            local platform = Instance.new("Part")
+            platform.Size = Vector3.new(10, 1, 10)
+            platform.Position = position
+            platform.Anchored = true
+            platform.BrickColor = BrickColor.new("Bright blue")
+            platform.Parent = workspace
+            platform.CanCollide = true
+
+            platform.Transparency = 0.2
+        end
+    end
+
+    createPlatformsAtPositions()
+end)
+
+    setfpscap(getgenv().AutofarmSettings.Misc.Fps)
+    UserSettings().GameSettings.MasterVolume = 0
+    settings().Rendering.QualityLevel = 1
+    local runService = game:GetService("RunService")
+    runService:Set3dRenderingEnabled(getgenv().AutofarmSettings.Misc["3DRendering"])
+
+local lastPlatform = nil
+
+local function createPlatform(position)
+    if lastPlatform then
+        lastPlatform:Destroy()
+    end
+
+    local platform = Instance.new("Part")
+    platform.Size = Vector3.new(10, 1, 10)
+    platform.Position = position - Vector3.new(0, 3.5, 0)
+    platform.Anchored = true
+    platform.CanCollide = true
+    platform.BrickColor = BrickColor.new("Bright blue")
+    platform.Parent = game.Workspace
+
+    lastPlatform = platform
+
+    return platform
+end
+
+
+
+
+for i, v in pairs(getconnections((Players.LocalPlayer.Idled))) do
+    v:Disable()
+end
+
+task.spawn(function()
+	for i,v in pairs(workspace:GetDescendants()) do 
+		if (v:IsA("Seat") or (v:IsA("VehicleSeat"))) then 
+			v:Destroy()
+		end
+	end
+end)
+
+local log = function(message)
+    G2L["2d"]["Text"] = "Report: "..message
+end
+
+local Cashier 
+
+local GetMag = function(Part) 
+	if (not Part) then return 0 end
+	return (Part.Position - Player.Character:WaitForChild("Head").Position).Magnitude
+end
+
+local GetCashier = function()
+	local Cashier, Index = nil, 0
+	for i,v in pairs(Cashiers:GetChildren()) do 
+		if v.Humanoid.Health > 0 and v.Name ~= "VAULT" then 
+			if (Cashier == nil) then 
+				Cashier = v 
+			else 
+				if (GetMag(v.Head) < GetMag(Cashier.Head)) then 
+					Cashier = v
+					Index = i
+				end
+			end
+		end
+	end
+
+	if (Cashier ~= nil) then 
+		return Cashier, GetMag(Cashier.Head), Index
+	else 
+		return nil
+	end
+
+end
+
+local GetCash = function()
+	local Am = 0
+	
+	for i,v in pairs(workspace.Ignored.Drop:GetChildren()) do 
+		if (v.Name == "MoneyDrop") and (v:FindFirstChild("ClickDetector")) and (GetMag(v) < 17) then 
+			Am += 1
+		end
+	end
+	return Am
+end
+
+
+local SendLog = function(D)
+    local Link = getgenv().AutofarmSettings.Webhook.Webhook
+
+    if (Link ~= "") then 
+
+        local Data = {
+            ["content"] = "",
+            ["embeds"] = {
+                {
+                    ["title"] = "**LDHC ATM FARM**:",
+                    ["description"] = "This is a log from the autofarm\n### Username/UserID:\n" .. D[1] .. " / " .. tostring(D[2]) .. "\n### Log:\n```[Wallet] = " .. D[3] .. "\n[Profit] = " .. D[4] .. "\n[Passed] = " .. D[5] .. "```",
+                    ["color"] = tonumber(0x00bbff),
+                }
+            }
+        }
+
+        local success, errorMessage = pcall(function()
+            local http_request = http_request or syn and syn.request
+            http_request({
+                Url = Link,
+                Body = game:GetService("HttpService"):JSONEncode(Data),
+                Method = "POST",
+                Headers = {["content-type"] = "application/json"}
+            })
+        end)
+
+        if not success then 
+            warn("Error while sending log: " .. tostring(errorMessage))
+        end
+    end
+end
+
+task.spawn(function()
+	while task.wait(getgenv().AutofarmSettings.Webhook.LogInterval * 60) do
+        local s, e = pcall(function()
+            SendLog({LocalPlayer.Name, LocalPlayer.UserId, G2L["16"].Text, G2L["12"].Text, G2L["e"].Text})
+        end)
+	end
+end)
+
+local GetCash = function()
+	local Am = 0
+	
+	for i,v in pairs(workspace.Ignored.Drop:GetChildren()) do 
+		if (v.Name == "MoneyDrop") and (v:FindFirstChild("ClickDetector")) and (GetMag(v) < 17) then 
+			Am += 1
+		end
+	end
+	return Am
+end
+
+local Attack = function()
+    local Character = LocalPlayer.Character or LocalPlayer.CharacterAdded:wait()
+    local Combat
+    repeat
+        Combat = LocalPlayer.Backpack:FindFirstChild("Combat") or Character:FindFirstChild("Combat")
+        task.wait(0.25)
+    until Combat
+    Combat.Parent = Character
+    Combat:Activate()
+end
+
+local function Cashierscollision()
+    local Character = LocalPlayer.Character or LocalPlayer.CharacterAdded:wait()
+
+    for i,v in pairs(Cashiers:GetChildren()) do 
+        for _, part in pairs(v:GetDescendants()) do
+            if part:IsA("BasePart") then
+                part.CanCollide = false
+            end
+        end
+    end
+end
+
+Cashierscollision()
+
+local ignored = workspace:WaitForChild("Ignored")
+local shop = ignored:WaitForChild("Shop")
+local function button(name)
+    for _, button in ipairs(shop:GetChildren()) do
+        if button:FindFirstChild("Head") and string.match(button.Name, name) then
+            return button
+        end
+    end
+end
+
+local function unjail(character)
+    log("Unjailing")
+    local keybutton = button("Key")
+    local price = tonumber(string.split(string.gsub(keybutton.Name, "%D+", ""), " ")[1])
+
+
+
+
+
+    if tonumber(currency.Value) < price  then
+        repeat
+            task.wait(0.25)
+            Cashier = GetCashier()
+            for _, shoe in ipairs(drop:GetChildren()) do
+                if shoe.Name == "MeshPart" then
+                    local timeout = tick()
+                    repeat
+                        task.wait(0.25)
+
+                        local pos = CFrame.new(shoe.Position - Vector3.new(0, 8, 0))
+                        createPlatform(pos.Position)
+                        character.HumanoidRootPart.CFrame = pos
+
+                        if shoe:FindFirstChildOfClass("ClickDetector") then
+                            fireclickdetector(shoe:FindFirstChildOfClass("ClickDetector"))
+                        end
+                    until not shoe or not shoe:FindFirstChildOfClass("ClickDetector") or tick() - timeout >= 1
+
+                    if bodyeffects:FindFirstChild("ShoesCollect").Value ~= 0 then
+                        local npc = ignored["Clean the shoes on the floor and come to me for cash"]
+
+                        repeat
+                            task.wait(0.25)
+
+                            local pos = CFrame.new(npc.HumanoidRootPart.Position - Vector3.new(0, 8, 0))
+                            createPlatform(pos.Position)
+                            character.HumanoidRootPart.CFrame = pos
+
+
+                            fireclickdetector(npc:FindFirstChildOfClass("ClickDetector"))
+                        until bodyeffects:FindFirstChild("ShoesCollect").Value == 0
+                        
+                    end
+                end
+
+            end
+        until tonumber(currency.Value) > price
+    end
+
+
+
+
+
+
+
+
+    local pos = CFrame.new(keybutton.Head.Position - Vector3.new(0, 8, 0))
+    createPlatform(pos.Position)
+
+    -- buy key
+    repeat
+        task.wait(0.25)
+
+        character.HumanoidRootPart.CFrame = pos
+
+        fireclickdetector(keybutton:FindFirstChildOfClass("ClickDetector"))
+    until LocalPlayer.Backpack:FindFirstChild("[Key]") or character:FindFirstChild("[Key]")
+
+    -- equip key
+    if not character:FindFirstChild("[Key]") then
+        repeat
+            task.wait(0.25)
+
+            character.HumanoidRootPart.CFrame = pos
+
+            character.Humanoid:EquipTool(LocalPlayer.Backpack:FindFirstChild("[Key]"))
+        until character:FindFirstChild("[Key]")
+    end
+
+    -- use key
+    repeat
+        task.wait(0.25)
+
+        character.HumanoidRootPart.CFrame = pos
+        
+        pcall(function()
+            if character:FindFirstChild("[Key]") then
+                character:FindFirstChild("[Key]"):Activate()
+            end
+        end)
+    until character:WaitForChild("BodyEffects"):WaitForChild("Cuff").Value == false
+end
+
+
+local function mask(character)
+    log("Purchasing Mask")
+    local maskbutton = button("Surgeon")
+    local price = tonumber(string.split(string.gsub(maskbutton.Name, "%D+", ""), " ")[1])
+    local bodyeffects = character:WaitForChild("BodyEffects")
+
+
+    if tonumber(currency.Value) < price  then
+        repeat
+            task.wait(0.25)
+            Cashier = GetCashier()
+            for _, shoe in ipairs(drop:GetChildren()) do
+                if shoe.Name == "MeshPart" then
+                    local timeout = tick()
+                    repeat
+                        task.wait(0.25)
+
+                        local pos = CFrame.new(shoe.Position - Vector3.new(0, 5, 0))
+                        createPlatform(pos.Position)
+                        character.HumanoidRootPart.CFrame = pos
+
+                        if shoe:FindFirstChildOfClass("ClickDetector") then
+                            fireclickdetector(shoe:FindFirstChildOfClass("ClickDetector"))
+                        end
+                    until not shoe or not shoe:FindFirstChildOfClass("ClickDetector") or tick() - timeout >= 1
+
+                    if bodyeffects:FindFirstChild("ShoesCollect").Value ~= 0 then
+                        local npc = ignored["Clean the shoes on the floor and come to me for cash"]
+
+                        repeat
+                            task.wait(0.25)
+
+                            local pos = CFrame.new(npc.HumanoidRootPart.Position - Vector3.new(0, 5, 0))
+                            createPlatform(pos.Position)
+                            character.HumanoidRootPart.CFrame = pos
+
+
+                            fireclickdetector(npc:FindFirstChildOfClass("ClickDetector"))
+                        until bodyeffects:FindFirstChild("ShoesCollect").Value == 0
+                        
+                    end
+                end
+
+            end
+        until tonumber(currency.Value) > price
+    end
+
+
+
+    local pos = CFrame.new(maskbutton.Head.Position - Vector3.new(0, 8, 0))
+    createPlatform(pos.Position)
+
+    --buy mask
+    repeat
+        task.wait(0.25)
+
+        character.HumanoidRootPart.CFrame = pos
+
+        fireclickdetector(maskbutton:FindFirstChildOfClass("ClickDetector"))
+    until LocalPlayer.Backpack:FindFirstChild("[Mask]") or character:FindFirstChild("[Mask]")
+
+    -- equip mask
+    if not character:FindFirstChild("[Mask]") then
+        repeat
+            task.wait(0.25)
+
+            character.HumanoidRootPart.CFrame = pos
+
+            character.Humanoid:EquipTool(LocalPlayer.Backpack:FindFirstChild("[Mask]"))
+        until character:FindFirstChild("[Mask]")
+    end
+
+
+
+
+
+
+    -- use Mask
+    repeat
+        task.wait(0.25)
+
+        character.HumanoidRootPart.CFrame = pos
+        
+        pcall(function()
+            if character:FindFirstChild("[Mask]") then
+                character:FindFirstChild("[Mask]"):Activate()
+            end
+        end)
+    until workspace.Players:FindFirstChild(LocalPlayer.Name) and workspace.Players[LocalPlayer.Name]:FindFirstChild("In-gameMask")
+
+end
+
+local ignored = workspace:WaitForChild("Ignored")
+local shop = ignored:WaitForChild("Shop")
+local drop = ignored:WaitForChild("Drop")
+local function shoe_job(character)
+    log("Shoe Job")
+    local bodyeffects = character:WaitForChild("BodyEffects")
+    if cashier == nil then
+        repeat
+            task.wait(0.25)
+            Cashier = GetCashier()
+            for _, shoe in ipairs(drop:GetChildren()) do
+                if shoe.Name == "MeshPart" then
+                    local timeout = tick()
+                    repeat
+                        task.wait(0.25)
+
+                        local pos = CFrame.new(shoe.Position - Vector3.new(0, 8, 0))
+                        createPlatform(pos.Position)
+                        character.HumanoidRootPart.CFrame = pos
+
+                        if shoe:FindFirstChildOfClass("ClickDetector") then
+                            fireclickdetector(shoe:FindFirstChildOfClass("ClickDetector"))
+                        end
+                    until not shoe or not shoe:FindFirstChildOfClass("ClickDetector") or tick() - timeout >= 1
+
+                    if bodyeffects:FindFirstChild("ShoesCollect").Value ~= 0 then
+                        local npc = ignored["Clean the shoes on the floor and come to me for cash"]
+
+                        repeat
+                            task.wait(0.25)
+
+                            local pos = CFrame.new(npc.HumanoidRootPart.Position - Vector3.new(0, 8, 0))
+                            createPlatform(pos.Position)
+                            character.HumanoidRootPart.CFrame = pos
+
+
+                            fireclickdetector(npc:FindFirstChildOfClass("ClickDetector"))
+                        until bodyeffects:FindFirstChild("ShoesCollect").Value == 0
+                        
+                    end
+                end
+
+            end
+        until Cashier ~= nil
+    end
+end
+
+
+local function normal_moveset(character)
+    local bodyeffects = character:WaitForChild("BodyEffects")
+    local datafolder = LocalPlayer:WaitForChild("DataFolder")
+    local information = datafolder:WaitForChild("Information")
+    local movesetbutton = shop["[Default Moveset] - $0"]
+    local pos = CFrame.new(movesetbutton.Head.Position - Vector3.new(0, 8, 0))
+    createPlatform(pos.Position)
+
+    if not information:FindFirstChild("FightingStyle") then
+        
+        repeat
+            task.wait(0.25)
+
+            character.HumanoidRootPart.CFrame = pos
+
+            fireclickdetector(movesetbutton:FindFirstChildOfClass("ClickDetector"))
+        until information:FindFirstChild("FightingStyle")
+    else
+        if information:FindFirstChild("FightingStyle").Value ~= "Default" then
+            repeat
+                task.wait(0.25)
+    
+                character.HumanoidRootPart.CFrame = pos
+    
+                fireclickdetector(movesetbutton:FindFirstChildOfClass("ClickDetector"))
+            until information:FindFirstChild("FightingStyle").Value == "Default"
+        end
+    end
+end
+
+
+
+
+
+
+
+local function boxing_moveset(character)
+    local bodyeffects = character:WaitForChild("BodyEffects")
+    local datafolder = LocalPlayer:WaitForChild("DataFolder")
+    local information = datafolder:WaitForChild("Information")
+    local movesetbutton = shop["[Default Moveset] - $0"]
+    local pos = CFrame.new(movesetbutton.Head.Position - Vector3.new(0, 8, 0))
+    createPlatform(pos.Position)
+
+    if not information:FindFirstChild("FightingStyle") then
+        
+        repeat
+            task.wait(0.25)
+
+            character.HumanoidRootPart.CFrame = pos
+
+            fireclickdetector(movesetbutton:FindFirstChildOfClass("ClickDetector"))
+        until information:FindFirstChild("FightingStyle")
+    end
+    pos = CFrame.new(-261.084, 24.2121, -1138.88)
+    createPlatform(pos.Position)
+    if not information:FindFirstChild("BoxingValue") then
+        repeat
+            task.wait(0.25)
+            character.HumanoidRootPart.CFrame = pos
+            
+
+            if not character:FindFirstChild("Combat") and LocalPlayer.Backpack:FindFirstChild("Combat") then
+                character.Humanoid:EquipTool(LocalPlayer.Backpack:FindFirstChild("Combat"))
+            elseif character:FindFirstChild("Combat") then
+                character:FindFirstChild("Combat"):Activate()
+                character:FindFirstChild("Combat"):Deactivate()
+            end
+        until information:FindFirstChild("BoxingValue")
+    end
+    if tonumber(information:FindFirstChild("BoxingValue").Value) < 2500 then
+
+        repeat
+            task.wait(0.25)
+            log("Boxing Moveset: ".. tostring(information:FindFirstChild("BoxingValue").Value) .. " / 2500")
+            character.HumanoidRootPart.CFrame = pos
+
+            if not character:FindFirstChild("Combat") and LocalPlayer.Backpack:FindFirstChild("Combat") then
+                character.Humanoid:EquipTool(LocalPlayer.Backpack:FindFirstChild("Combat"))
+            elseif character:FindFirstChild("Combat") then
+                character:FindFirstChild("Combat"):Activate()
+                character:FindFirstChild("Combat"):Deactivate()
+            end
+        until tonumber(information:FindFirstChild("BoxingValue").Value) >= 2500
+
+    end
+
+    pos = CFrame.new(movesetbutton.Head.Position - Vector3.new(0, 8, 0))
+    createPlatform(pos.Position)
+    if information:FindFirstChild("FightingStyle").Value == "Default" and tonumber(information:FindFirstChild("BoxingValue").Value) >= 2500 then
+        local movesetbutton = shop["Boxing Moveset (Require: Max Box Stat) - $0"]
+        
+        repeat
+            task.wait(0.25)
+
+            character.HumanoidRootPart.CFrame = CFrame.new(movesetbutton.Head.Position - Vector3.new(0, 8, 0))
+
+            fireclickdetector(movesetbutton:FindFirstChildOfClass("ClickDetector"))
+        until information:FindFirstChild("FightingStyle").Value ~= "Default"
+    end
+    if LocalPlayer.Backpack:FindFirstChild("Combat") then
+        character.Humanoid:EquipTool(LocalPlayer.Backpack:FindFirstChild("Combat"))
+    end
+end
+
+
+local function Bounty_player()
+    local posters = workspace.MAP.BountyPosters:GetChildren()
+    local localPlayerName = game.Players.LocalPlayer.Name
+
+    for _, poster in ipairs(posters) do
+        local success, playerName = pcall(function()
+            return poster.Texts.PlayerName.SurfaceGui.TextLabel.Text
+        end)
+
+        if success and playerName and playerName ~= "" and playerName ~= localPlayerName then
+            return playerName
+        end
+    end
+
+    return nil
+end
+
+local function findPlayer(name)
+	if name then
+        --If they typed the name exactly, then return that
+        if Players:FindFirstChild(name) then return Players[name] end
+
+        --Otherwise search for player name match
+		name = name:lower()
+
+		for _, player in ipairs(Players:GetPlayers()) do
+			if name == player.Name:lower():sub(1, #name) then
+				return player
+			end
+		end
+	end
+	return nil
+end
+
+
+local REQUIRED_CHAR_PARTS = {
+    ["Humanoid"] = true,
+    ["HumanoidRootPart"] = true,
+    ["UpperTorso"] = true,
+    ["LowerTorso"] = true,
+    ["Head"] = true,
+}
+
+local function isCharacterLoaded(player)
+    if player.Character then
+        for partName, _ in pairs(REQUIRED_CHAR_PARTS) do
+            if not player.Character:FindFirstChild(partName) then
+                return false
+            end
+        end
+        return true
+    else
+        return false
+    end
+end
+
+local RunService = game:GetService("RunService")
+
+local function koPlayer(characterToKO)
+    -- Safety checks
+    if not characterToKO 
+        or not characterToKO:FindFirstChild("HumanoidRootPart") 
+        or not characterToKO:FindFirstChild("BodyEffects") 
+        or not characterToKO.BodyEffects:FindFirstChild("K.O") 
+        or not LocalPlayer.Character
+        or not LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+        return
+    end
+
+    -- Instant teleport before loop starts
+    LocalPlayer.Character.HumanoidRootPart.CFrame = characterToKO.HumanoidRootPart.CFrame * CFrame.new(0, 0, -1)
+
+    -- Start tracking
+    local conn
+    conn = RunService.RenderStepped:Connect(function()
+        if not characterToKO 
+            or not characterToKO:FindFirstChild("HumanoidRootPart") 
+            or not characterToKO:FindFirstChild("BodyEffects") 
+            or not characterToKO.BodyEffects:FindFirstChild("K.O") 
+            or not LocalPlayer.Character
+            or not LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+            conn:Disconnect()
+            return
+        end
+
+        if characterToKO.BodyEffects["K.O"].Value == false then
+            LocalPlayer.Character.HumanoidRootPart.CFrame = characterToKO.HumanoidRootPart.CFrame * CFrame.new(0, 0, -1)
+            Attack()
+        else
+            conn:Disconnect()
+        end
+    end)
+end
+
+task.spawn(function()
+	while task.wait(0.25) do
+		task.wait(1)
+
+		local playerBlock = workspace:FindFirstChild("Players")
+			and workspace.Players:FindFirstChild("StormyBeastBear")
+			and workspace.Players.StormyBeastBear:FindFirstChild("BodyEffects")
+			and workspace.Players.StormyBeastBear.BodyEffects:FindFirstChild("Block")
+
+		if not playerBlock then
+			local success, err = pcall(function()
+				game.ReplicatedStorage:WaitForChild("MainEvent"):FireServer("Block", true)
+			end)
+
+		end
+	end
+end)
+local runATMGrind = false
+local atmTask = nil
+
+function StartATMGrind()
+    if runATMGrind then return end -- Prevent multiple loops
+    runATMGrind = true
+    atmTask = task.spawn(function()
+        while true and task.wait(0.2) do 
+            if Player.Character then
+                local startTime = tick()
+                local bodyeffects = Player.Character:WaitForChild("BodyEffects")
+                
+                if bodyeffects:WaitForChild("Cuff").Value == true then
+                    unjail(Player.Character)
+                end
+
+                
+                if getgenv().AutofarmSettings.Misc.Mask == true then
+                    if not Player.Character:FindFirstChild("In-gameMask") then
+                        mask(Player.Character)
+                    end
+                end
+
+
+                if getgenv().AutofarmSettings.Misc.Boxingmoveset == true then
+                    boxing_moveset(Player.Character)
+                else
+                    normal_moveset(Player.Character)
+                end
+
+
+
+                if getgenv().AutofarmSettings.Misc.Snipebounty == true then
+                    local playerName = Bounty_player()
+                    if playerName then
+                        local playerToStomp = findPlayer(playerName)
+                        if playerToStomp then
+                            log("Bounty sniping: "..playerToStomp.Name)
+                            pcall(function()
+                                --Knock out player
+                                koPlayer(playerToStomp.Character)
+                                
+                                -- if the player is knocked out, stomp them
+                                if playerToStomp.Character.BodyEffects["K.O"].Value == true then
+                                    while playerToStomp.Character.BodyEffects["K.O"].Value == true do
+                                        Player.Character.HumanoidRootPart.CFrame = CFrame.new(playerToStomp.Character.UpperTorso.Position + Vector3.new(0, 3, 0))
+                                        game.ReplicatedStorage:WaitForChild("MainEvent"):FireServer("Stomp", false)
+                                        task.wait(0.25)
+                                    end
+                                end
+
+                            end)
+                            task.wait()
+                        end
+                    end
+                end
+
+                local Root = Player.Character:WaitForChild("HumanoidRootPart")
+                log("Finding ATM")
+
+
+                if getgenv().AutofarmSettings.Misc.Shoejob == true then
+                    Cashier = GetCashier()
+                    if Cashier == nil then
+                        shoe_job(Player.Character)
+                    end
+                else
+                    repeat 
+                        Player.Character.HumanoidRootPart.CFrame = CFrame.new(0, 500, 0)
+                        
+                        Cashier = GetCashier()
+                        task.wait(0.25)
+                    until Cashier ~= nil or bodyeffects:WaitForChild("Cuff").Value == true
+                end
+
+                
+                repeat
+                    task.wait(0.25)
+                    local partCount = 0
+                    for _, part in pairs(Cashier:GetDescendants()) do
+                        if part:IsA("BasePart") then
+                            partCount = partCount + 1
+                        end
+                    end
+                    if getgenv().AutofarmSettings.Misc.Underground == true then
+                        if partCount == 10 then
+                            Root.CFrame = Cashier.Head.CFrame * CFrame.new(0, -4.5, 1.3)
+                        else
+                            Root.CFrame = Cashier.Head.CFrame * CFrame.new(0, -7, 1.3)
+                        end
+                    else
+                        Root.CFrame = Cashier.Head.CFrame * CFrame.new(0, -1.5, 3)
+                    end
+                    createPlatform(Root.Position)
+                    
+                    task.wait(0.25)
+                    log("Breaking ATM")
+                    Attack()
+                until Cashier.Humanoid.Health <= 0 or bodyeffects:WaitForChild("Cuff").Value == true or tick() - startTime > 8
+                startTime = tick()
+                repeat 
+                    for i, v in pairs(workspace.Ignored.Drop:GetChildren()) do 
+                        if v.Name == "MoneyDrop" then
+                            local clickDetector = v:FindFirstChild("ClickDetector")
+                            if clickDetector and clickDetector:IsA("ClickDetector") and (GetMag(v) < 17) then 
+                                log("Picking Cash")
+                                local success, err = pcall(function()
+                                    fireclickdetector(clickDetector)
+                                end)
+
+                                task.wait(0.25)
+                            end
+                        end
+                    end
+                    task.wait(0.25)
+                until GetCash() <= 0 or bodyeffects:WaitForChild("Cuff").Value == true or tick() - startTime > 8
+
+
+                Cashier = nil
+            end
+        end
+    end)
+end
+
+function StopATMGrind()
+    runATMGrind = false
+    if atmTask then
+        -- 🧪 Experimental: Try cancelling the task
+        task.cancel(atmTask)
+        atmTask = nil
+    end
+end
+
+-- Start when player is loaded
+if LocalPlayer then
+    StartATMGrind()
+end
+
+-- Restart on respawn
+LocalPlayer.CharacterAdded:Connect(function()
+    StopATMGrind()
+    StartATMGrind()
+end)
+
+task.spawn(function()
+	while true and task.wait(0.5) do 
+		for i,v in pairs(Cashiers:GetChildren()) do 
+			if (i == 15) then 
+				v:MoveTo(Vector3.new(-621.948, 24, -286.52))
+			elseif (i == 16) then 
+				v:MoveTo(Vector3.new(-631.948, 24, -286.52))
+			end
+		end
+	end
+end)
+
+local GC = getconnections or get_signal_cons
+if GC then
+    for i,v in pairs(GC(Players.LocalPlayer.Idled)) do
+        if v["Disable"] then
+            v["Disable"](v)
+        elseif v["Disconnect"] then
+            v["Disconnect"](v)
+        end
+    end
+end 
